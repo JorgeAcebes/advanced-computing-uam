@@ -305,9 +305,11 @@ for modelo, ang, alcance in data:
     print(f"{modelo:<10} | {ang:>10.2f} | {alcance:>10.2f}")
 
 # Guardamos los resultados
-with open('best_resuts.dat', 'w') as f:
+with open('best_resuts.txt', 'w') as f:
     for i in np.arange(len(data)):
             f.write('{} {:3.1f} {:.4f}\n'.format(data[i][0], data[i][1], data[i][2]))
+            
+print('Resultados Guardados')
 
 
 

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*$py.class
+.venv/
+build/
+dist/
+.ipynb_checkpoints
+.vscode/
+*.code-workspace
+style/
+README_IF_PROFESSOR.md

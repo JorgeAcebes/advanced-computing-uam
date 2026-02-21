@@ -1,0 +1,74 @@
+% ==========================================
+% Archivo: sections/3_code_and_methdos.tex
+% ==========================================
+\section{Marco Computacional}
+
+La formulación matemática descrita requiere métodos de integración numérica explícitos para resolver el problema de valor inicial. Se han implementado dos esquemas de distinto orden de precisión: Euler Explícito ($\mathcal{O}(\Delta t)$) y Runge-Kutta clásico de 4 etapas (RK4, $\mathcal{O}(\Delta t^4)$).
+
+El estado del sistema se discretiza en el vector de estado $\mathbf{Y}(t) = [\mathbf{r}(t), \mathbf{v}(t)]^T$. Una particularidad algorítmica fundamental incorporada en las rutinas es la detección de eventos de parada (colisión con el suelo, es decir, el cruce por cero de la componente $y$ o $z$). Para evitar errores de truncamiento severos en el instante de impacto, se implementa una interpolación lineal entre el último paso válido y el primer paso negativo.
+
+A continuación, se presenta la implementación del método de Euler explícito, el cual avanza la solución calculando la derivada en el punto inicial del intervalo temporal:
+
+\begin{lstlisting}[language=Python, caption={Implementación del método de Euler explícito con interpolación de impacto.}]
+def euler_solver(func, t_array, y0, stop_idx=None):
+    steps = len(t_array)
+    dt = t_array[1] - t_array[0]
+    
+    y_sol = np.zeros((steps, len(y0)))
+    y_sol[0] = y0
+    
+    for i in range(steps - 1):
+        y_next = y_sol[i] + dt * func(t_array[i], y_sol[i])
+        
+        # Logica de parada e interpolacion lineal
+        if stop_idx is not None and y_next[stop_idx] < 0:
+            y_prev = y_sol[i, stop_idx]
+            val_next = y_next[stop_idx]
+            
+            frac = y_prev / (y_prev - val_next)
+            y_sol[i+1] = y_sol[i] + frac * (y_next - y_sol[i])
+            return y_sol[:i+2]
+
+        y_sol[i+1] = y_next
+        
+    return y_sol
+\end{lstlisting}
+
+
+Por su parte, la lógica del integrador \texttt{rk4\_solver} es la siguiente:
+\begin{lstlisting}[language=Python, caption={Implementación del método de Runge-Kutta 4 con interpolación de impacto.}]
+def rk4_solver(func, t_array, y0, stop_idx=None):
+    steps = len(t_array)
+    dt = t_array[1] - t_array[0]
+    
+    y_sol = np.zeros((steps, *np.shape(y0)))
+    y_sol[0] = y0
+    for i in range(steps - 1):
+        t_i = t_array[i]
+        y_i = y_sol[i]
+        
+        k1 = func(t_i, y_i)
+        k2 = func(t_i + 0.5*dt, y_i + 0.5*dt*k1)
+        k3 = func(t_i + 0.5*dt, y_i + 0.5*dt*k2)
+        k4 = func(t_i + dt, y_i + dt*k3)
+        
+        y_next = y_i + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
+        
+        # Logica de parada e interpolacion lineal
+        if stop_idx is not None and y_next[stop_idx] < 0:
+            y_prev_val = y_i[stop_idx]
+            y_next_val = y_next[stop_idx]
+            
+            frac = y_prev_val / (y_prev_val - y_next_val)
+            y_sol[i+1] = y_i + frac * (y_next - y_i)
+            
+            return y_sol[:i+2]
+    
+        y_sol[i+1] = y_next
+    return y_sol
+\end{lstlisting}
+
+La interpolación calcula la fracción del paso de tiempo $\Delta t$ exacta en la que el cuerpo interseca $y=0$, escalando el vector completo y truncando el array de salida, optimizando así la memoria y preservando la veracidad geométrica de la trayectoria computada.
+
+
+La implementación del método RK4 se utilizó exclusivamente en la modelización del lanzamiento de varios cuerpos bajo muelles viscoelásticos. Esta elección responde a la necesidad de obtener una mayor precisión en la trayectoria y en la conservación de la energía del sistema sin tener que recurrir a diferenciales de tiempo ($\Delta t$) extremadamente pequeños. A diferencia del lanzamiento de un proyectil simple, donde los métodos de primer orden resultan suficientes, la interacción entre múltiples masas acopladas por fuerzas elásticas y de amortiguamiento requiere de un algoritmo más robusto para evitar inestabilidades numéricas. El uso de RK4 permite capturar estas oscilaciones complejas de forma eficiente y físicamente coherente.

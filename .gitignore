@@ -10,3 +10,10 @@ dist/
 style/
 README_IF_PROFESSOR.md
 figures/
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk

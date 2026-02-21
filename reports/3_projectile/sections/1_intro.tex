@@ -1,0 +1,11 @@
+% ==========================================
+% Archivo: sections/1_intro.tex
+% ==========================================
+\section{Introducción}
+
+El presente documento aborda la resolución numérica de ecuaciones diferenciales ordinarias (EDOs) aplicadas a dos clases de problemas fundamentales en la física clásica: la dinámica de proyectiles bajo condiciones atmosféricas complejas y la evolución temporal de sistemas multicuerpo acoplados mediante interacciones viscoelásticas.
+
+En primer lugar, se emplea el método de integración numérica Euler explícito para estudiar la trayectoria de un proyectil  evaluando perturbaciones sucesivas sobre el modelo parabólico ideal. Se incorporan efectos como la variación espacial de la aceleración gravitatoria, la fuerza de arrastre aerodinámico con dependencia cuadrática de la velocidad y perfiles de densidad atmosférica (isotérmico y adiabático). Además, se introduce la componente de la velocidad del viento, así como la fuerza de sustentación asimétrica debida a la rotación del cuerpo (efecto Magnus), crucial en el análisis de trayectorias en aerodinámica deportiva dando lugar al efecto de \textit{slice} y \textit{hook} en pelotas de golf. Para todos los casos, se estudia el ángulo de lanzamiento óptimo que maximiza el alcance del cuerpo.
+
+En segundo lugar, se hace uso del método de Runge-Kutta de orden 4 (RK4) para analizar el lanzamiento un sistema de masas acopladas tridimensionalmente mediante el modelo de Kelvin-Voigt, el cual combina la elasticidad hookeana con el amortiguamiento viscoso.
+

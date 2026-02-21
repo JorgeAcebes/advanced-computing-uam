@@ -950,7 +950,7 @@ t = np.linspace(0,20, 10000)
 y0 = [-1, 1, 1,   # r1
       2, 0, 5,    # v1
       0, 2, 2,    # r2
-     -2, -1, 2,   # v2
+     -2, 0, 2,   # v2
      0, 10, 0,    # r3
       2, 0, 2     # v3
     ]
@@ -1216,8 +1216,7 @@ plt.show()
 # --- Resultados y Espacio de Fases
 
 print('='*75)
-print(f"El desplazamiento máximo en el eje y debido al efecto Magnus es: {y_vals[-1]:.1f} m")
-print(f"Este desplazamiento se obtiene para un ángulo theta: {ang_optim:.1f}º")
+print(f"Ángulo que maximiza distancia recorrida: {ang_optim:.1f}º")
 print('='*75)
 
 
@@ -1229,7 +1228,6 @@ ax.plot(v_vals_mod, r_vals_mod, ':', color='magenta', alpha = 0.5, label=r'Slice
 ax.plot(v_hook_mod, r_hook_mod, '-.', color='green', alpha=0.5, label=r'Hook', zorder=1)
 
 # Formato de Ejes y Etiquetas
-# Uso de raw strings (r'') para LaTeX dentro de mathtext
 ax.set_xlabel(r'Velocidad $v$ [m/s]')
 ax.set_ylabel(r'Posición $r$ [m]')
 ax.set_title(r'Espacio de Fases')
@@ -1245,3 +1243,4 @@ plt.savefig(figuras/'espacio_fases_golf.png', bbox_inches='tight', dpi = 200)
 plt.show()
 
 
+plt.close()

@@ -1,0 +1,58 @@
+% ==========================================
+% Archivo: sections/2_theory.tex
+% ==========================================
+\section{Marco Teórico}
+
+\subsection{Dinámica del Vuelo de Proyectiles}
+La ecuación de movimiento de un cuerpo de masa $m$ en el seno de un fluido, desde un sistema de referencia inercial terrestre, viene dada por la Segunda Ley de Newton:
+\begin{equation}
+    m \frac{d\mathbf{v}}{dt} = \mathbf{F}_g + \mathbf{F}_d + \mathbf{F}_M
+\end{equation}
+donde $\mathbf{F}_g$ es la fuerza gravitatoria, $\mathbf{F}_d$ es el arrastre aerodinámico y $\mathbf{F}_M$ es la fuerza de Magnus. Para trayectorias que alcanzan variaciones significativas de altitud $y$, la gravedad deja de ser constante y se aproxima mediante la ley de gravitación universal:
+\begin{equation}
+    \mathbf{g}(y) = -g \left( \frac{R_T}{R_T + y} \right)^2 \hat{\jmath}
+\end{equation}
+con $R_T$ siendo el radio terrestre y $g$ la aceleración a nivel del mar.
+
+El arrastre aerodinámico se modeliza de forma general con una dependencia cuadrática de la velocidad:
+\begin{equation}
+    \mathbf{F}_d = - \frac{1}{2} C \rho(y) A |\mathbf{v}_{\rm rel}| \mathbf{v}_{\rm rel} 
+\end{equation}
+donde $\mathbf{v}_{\rm rel} = \mathbf{v} - \mathbf{v}_w$ es la velocidad del cuerpo relativa al viento.
+
+
+El perfil vertical de la densidad atmosférica, $\rho(y)$, está subordinado al modelo termodinámico adoptado. En el régimen isotérmico, obedece a un decaimiento exponencial:
+\begin{equation}
+    \rho(y) = \rho_0 \exp\left(-\frac{y}{y_0}\right)
+\end{equation}
+donde $\rho_0$ es la densidad de referencia a una temperatura $T_0 = 288\mathrm{\,K}$ y presión $p = 101.325\mathrm{\,kPa}$. La altura de escala queda definida como $y_0 = \frac{k_B T_0}{m g}$, siendo $k_B$ la constante de Boltzmann y $m \approx 4.81 \times 10^{-26}\mathrm{\,kg}$ la masa molecular promedio del aire seco.
+
+Por su parte, el modelo adiabático asume un decrecimiento polinómico de la forma:
+\begin{equation}
+    \rho(y) = \rho_0 \left( 1 - \frac{a y}{T_0} \right)^\alpha
+\end{equation}
+caracterizado por un gradiente térmico $a = 6.5 \times 10^{-3}\mathrm{\,K/m}$ y un exponente adimensional $\alpha = 2.5$.
+
+En el régimen específico del vuelo de una pelota de golf (para el estudio de los efectos \textit{slice} y \textit{hook}), el coeficiente aerodinámico de arrastre $C$ no es estrictamente constante, sino que presenta una fuerte dependencia con el módulo de la velocidad. Empíricamente, este comportamiento se modela mediante la siguiente función definida a trozos:
+\begin{equation}
+    C(v) =
+    \begin{cases}
+        1.0 & \text{si } v < 14 \text{ m/s} \\
+        \frac{14}{v} & \text{si } v \geq 14 \text{ m/s}
+    \end{cases}
+    \label{eq:coef_arrastre}
+\end{equation}
+Esta transición altera drásticamente la tasa de disipación de energía cinética a altas velocidades frente a las bajas. 
+
+Adicionalmente, el efecto Magnus, causado por la asimetría en la capa límite debido a la rotación del cuerpo, produce una fuerza transversal:
+\begin{equation}
+    \mathbf{F}_M = S (\boldsymbol{\omega} \times \mathbf{v}_{\rm rel})
+\end{equation}
+donde $S$ es un coeficiente que depende de las propiedades aerodinámicas del cuerpo.
+
+\subsection{Sistemas Multicuerpo Viscoelásticos}
+Para sistemas acoplados, la interacción entre la masa $i$ y la masa $j$ se describe mediante el modelo de Kelvin-Voigt \citep{viscous}. La fuerza que ejerce la masa $j$ sobre la masa $i$ es la suma de una componente elástica puramente posicional y una componente viscosa proporcional a la velocidad relativa a lo largo del eje de unión:
+\begin{equation}
+    \mathbf{F}_{ij} = - \left[ k_{ij} (|\mathbf{r}_{ij}| - L) + c \left( \mathbf{v}_{ij} \cdot \hat{u}_{ij} \right) \right] \hat{u}_{ij}
+\end{equation}
+siendo $\mathbf{r}_{ij} = \mathbf{r}_i - \mathbf{r}_j$, $\mathbf{v}_{ij} = \mathbf{v}_i - \mathbf{v}_j$, y el vector director unitario $\hat{u}_{ij} = \mathbf{r}_{ij}/|\mathbf{r}_{ij}|$. La constante $L$ denota la longitud natural del resorte, $k_{ij}$ la rigidez entre ambos nodos y $c$ el coeficiente de amortiguamiento viscoso.

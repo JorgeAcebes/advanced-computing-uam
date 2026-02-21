@@ -1,6 +1,6 @@
 Model     	     Angle	     Reach
-No Air    	        45	   50015.6
-With Air  	        39	   22085.9
-Isothermic	        47	   32159.7
-Adiabatic 	        44	   27623.3
-Magnus    	        12	  309658.3
+No Air    	      45.0	   49971.0
+With Air  	      38.8	   22078.2
+Isothermic	      47.2	   31876.8
+Adiabatic 	      43.7	   27633.6
+Magnus    	       6.4	  113092.3

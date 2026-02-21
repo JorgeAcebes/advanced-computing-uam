@@ -9,3 +9,4 @@ dist/
 *.code-workspace
 style/
 README_IF_PROFESSOR.md
+figures/

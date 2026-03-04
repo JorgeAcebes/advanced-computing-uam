@@ -1,4 +1,12 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.ticker import MaxNLocator
+import scipy as sp
+# __________________________________________
+
+#                IVP SOLVERS
+# __________________________________________
 
 # ==========================================
 # 1. EULER EXPLÍCITO (Orden 1)
@@ -324,3 +332,264 @@ def verlet_solver(acc_func, t_array, x0, v0, stop_idx=None):
         a_current = a_next
         
     return x_sol, v_sol
+
+
+# __________________________________________
+
+#           AUXILIARY FUNCTIONS
+# __________________________________________
+
+
+# Angles and Chaos
+
+def restringir(o):
+    o = (o + np.pi) % (2*np.pi) - np.pi # Restrinjo el ángulo entre -pi y pi
+    return o
+
+def sec_poincare(o, w, t, tol = None):
+    """
+    Devuelve los elementos del np.array w tal que wt = 2*pi*n, así como los correspondientes ángulos o a los que sucede.
+
+    o: np.array -- Ángulos
+    w: np.array -- Velocidad angular 
+    t: np.array -- Tiempos
+    tol: int    -- Tolerancia de la igualdad
+    """
+
+    tol = (t[1]-t[0])/2 if tol is None else tol
+
+    mask = ((w*t)%(2*np.pi)) < tol
+
+    o_poinc = o[mask] 
+    w_poinc = w[mask]
+    t_poinc = t[mask]
+
+    return o_poinc, w_poinc, t_poinc
+
+
+def sec_poincare_forz(o, w, O_d, t, tol = None):
+    """
+    Devuelve los elementos del np.array w tal que wt = 2*pi*n, así como los correspondientes ángulos o a los que sucede.
+
+    o: np.array -- Ángulos
+    w: np.array -- Velocidad angular 
+    t: np.array -- Tiempos
+    tol: int    -- Tolerancia de la igualdad
+    """
+
+    tol = (t[1]-t[0])/2 if tol is None else tol
+
+    mask = ((O_d*t)%(2*np.pi)) < tol
+
+    o_poinc = o[mask] 
+    w_poinc = w[mask]
+    t_poinc = t[mask]
+
+    return o_poinc, w_poinc, t_poinc
+
+
+def amplitud(o, frac = 1/2):
+    """
+    Dado un vector de ángulos, devuelve la amplitud de la parte estacionaria
+
+    == Input ==
+    o: np.array -- Vector de ángulos
+    frac: float -- Fracción del vector o que corresponde a la parte estacionaria. 
+    Se considera por defecto que la segunda mitad del vector es la parte estacionaria.
+    """
+    if not 0 < frac <= 1:
+        raise ValueError("frac debe estar en el intervalo (0, 1].")
+    
+    long_estacionaria = int(len(o) * frac)
+    return  (np.max(o[long_estacionaria:]) - np.min(o[long_estacionaria:]))/2
+
+
+# __________________________________________
+
+#               PLOT STYLES
+# __________________________________________
+
+# Estilo texto y líneas ejes
+def setup_style(base_size=13, dpi=150, **kwargs):
+    """
+    Configura el estilo global. 
+    Usa kwargs para sobreescribir cualquier parámetro de rcParams.
+    """
+    config = {
+        "text.usetex": False,
+        "font.family": "serif",
+        "mathtext.fontset": "cm",
+        "font.serif": ["DejaVu Serif"],
+        "figure.dpi": dpi,
+        "xtick.labelsize": base_size,
+        "ytick.labelsize": base_size,
+        "axes.labelsize": base_size + 1,
+        "axes.titlesize": base_size + 2,
+        "legend.fontsize": base_size - 1,
+        "figure.titlesize": base_size + 4
+    }
+    # Actualiza con parámetros específicos que pases (ej. setup_style(xtick_labelsize=20))
+    config.update({k.replace('_', '.'): v for k, v in kwargs.items()})
+    plt.rcParams.update(config)
+
+def multiline_plot(ax, x, y_list, labels, colors, styles=None, **kwargs):
+    """Grafica múltiples series de datos en un solo eje de forma compacta. Líneas continuas"""
+    if styles is None: styles = ['-'] * len(y_list)
+    for y, label, color, style in zip(y_list, labels, colors, styles):
+        ax.plot(x, y, label=label, color=color, linestyle=style, **kwargs)
+
+def multiscatter_plot(ax, x_list, y_list, labels, colors, **kwargs):
+    """Grafica múltiples series de datos en un solo eje de forma compacta. Puntos (scatter)"""
+    for x,y, label, color in zip(x_list, y_list, labels, colors):
+        ax.scatter(x, y, label=label, color=color, **kwargs)
+
+
+# Estilo etiquetas ejes
+def setup_ax(ax, title=None, xlabel=None, ylabel=None, grid=False, legend=False, **kwargs):
+    """Configuración estética. Solo aplica fuentes si se pasan por kwargs."""
+    
+    # Extraemos tamaños solo si existen, si no, dejamos que rcParams mande
+    t_size = kwargs.get('titlesize')
+    l_size = kwargs.get('labelsize')
+
+    if title: 
+        ax.set_title(title, fontsize=t_size) if t_size else ax.set_title(title)
+    if xlabel: 
+        ax.set_xlabel(xlabel, fontsize=l_size) if l_size else ax.set_xlabel(xlabel)
+    if ylabel: 
+        ax.set_ylabel(ylabel, fontsize=l_size) if l_size else ax.set_ylabel(ylabel)
+    
+    if grid: 
+        ax.grid(True, linestyle=kwargs.get('grid_style', ':'), alpha=kwargs.get('alpha', 0.6))
+    
+    if legend: 
+        ax.legend(frameon=True, loc='best', 
+                  fontsize=kwargs.get('legendsize'), 
+                  framealpha=kwargs.get('framealpha', 0.6))
+        
+          
+# Estilo de ejes habituales
+def espacio_tiempo(ax, espacio =r'Posición $x$ [m]'):
+    ax.set_xlabel(r'Tiempo $t$ [s]')
+    ax.set_ylabel(rf'{espacio}')
+    ax.legend(frameon=True, loc='best', fontsize=12, framealpha=0.6, edgecolor='gray')
+
+def espacio_fases(ax):
+    ax.set_xlabel(r'Posición $x$ [m]')
+    ax.set_ylabel(r'Velocidad $v$ [m/s]')
+    ax.legend(frameon=True, loc='best', fontsize=12, framealpha=0.6, edgecolor='gray')
+
+
+
+def animar_trayectorias(datos, duracion, fps=30, guardar=False, archivo='animacion.mp4', **kwargs):
+    """
+    datos: Lista de arrays. Cada array debe tener forma (dim, N_puntos).
+           Si dim=2 se hace en 2D, si dim=3 se hace en 3D.
+    duracion: Duración total en segundos.
+    kwargs: title, xlabel, ylabel, zlabel, xlim, ylim, zlim, colors, linestyles, labels.
+    """
+    
+    # 1. Análisis de dimensiones
+    if not isinstance(datos, (list, tuple)):
+        datos = [datos]
+        
+    dim = datos[0].shape[0]
+    n_puntos = datos[0].shape[1]
+    
+    if dim not in [2, 3]:
+        raise ValueError("La dimensión de los datos debe ser 2 o 3.")
+
+    # 2. Cálculo de fotogramas
+    frames_tot = int(duracion * fps)
+    
+    # 3. Configuración de la figura
+    fig = plt.figure(figsize=kwargs.get('figsize', (8, 8)), dpi=kwargs.get('dpi', 120))
+    if dim == 3:
+        ax = fig.add_subplot(projection='3d')
+        ax.set_zlabel(kwargs.get('zlabel', r'$z$'), labelpad=15)
+        if 'zlim' in kwargs: ax.set_zlim(kwargs['zlim'])
+        ax.zaxis.set_major_locator(MaxNLocator(nbins=5))
+    else:
+        ax = fig.add_subplot()
+        
+    ax.set_title(kwargs.get('title', r'Animación'))
+    ax.set_xlabel(kwargs.get('xlabel', r'$x$'), labelpad=15)
+    ax.set_ylabel(kwargs.get('ylabel', r'$y$'), labelpad=15)
+    
+    if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
+    if 'ylim' in kwargs: ax.set_ylim(kwargs['ylim'])
+    
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+
+    # 4. Inicialización de elementos gráficos
+    lineas = []
+    puntos = []
+    sombras = []
+    
+    colores = kwargs.get('colors', ['navy', 'crimson', 'darkgreen', 'darkorange'])
+    linestyles = kwargs.get('linestyles', ['-'] * len(datos))
+    labels = kwargs.get('labels', [f'Cuerpo {i}' for i in range(len(datos))])
+
+    for i in range(len(datos)):
+        c = colores[i % len(colores)]
+        ls = linestyles[i % len(linestyles)]
+        
+        if dim == 3:
+            linea, = ax.plot([], [], [], lw=2, color=c, linestyle=ls, label=labels[i])
+            punto, = ax.plot([], [], [], 'o', color=c, markersize=5)
+            sombra, = ax.plot([], [], [], '--', color='gray', alpha=0.3)
+            sombras.append(sombra)
+        else:
+            linea, = ax.plot([], [], lw=2, color=c, linestyle=ls, label=labels[i])
+            punto, = ax.plot([], [], 'o', color=c, markersize=5)
+            
+        lineas.append(linea)
+        puntos.append(punto)
+
+    if kwargs.get('legend', True):
+        ax.legend()
+
+    # 5. Función de actualización (Closure)
+    def update(frame):
+        # Mapeo del fotograma actual al índice real del array de datos
+        idx = int(frame * (n_puntos - 1) / (frames_tot - 1)) if frames_tot > 1 else 0
+        
+        elementos_actualizados = []
+        
+        for i, data in enumerate(datos):
+            x, y = data[0, :idx+1], data[1, :idx+1]
+            
+            if dim == 3:
+                z = data[2, :idx+1]
+                lineas[i].set_data(x, y)
+                lineas[i].set_3d_properties(z)
+                
+                puntos[i].set_data([x[-1]], [y[-1]])
+                puntos[i].set_3d_properties([z[-1]])
+                
+                # Proyección en la base (Z mínimo dinámico o fijo)
+                z_min = kwargs.get('zlim', [np.min(data[2])])[0]
+                sombras[i].set_data(x, y)
+                sombras[i].set_3d_properties(np.full_like(x, z_min))
+                
+                elementos_actualizados.extend([lineas[i], puntos[i], sombras[i]])
+            else:
+                lineas[i].set_data(x, y)
+                puntos[i].set_data([x[-1]], [y[-1]])
+                elementos_actualizados.extend([lineas[i], puntos[i]])
+                
+        return elementos_actualizados
+
+    # 6. Ejecución
+    ani = FuncAnimation(
+        fig, update, frames=frames_tot,
+        interval=1000/fps, blit=False, repeat=False
+    )
+
+    if guardar:
+        ani.save(archivo, writer="ffmpeg", fps=fps, dpi=kwargs.get('dpi', 120))
+    
+    plt.tight_layout()
+    plt.show()
+    return ani

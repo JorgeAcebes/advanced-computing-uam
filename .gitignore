@@ -9,6 +9,7 @@ dist/
 *.code-workspace
 style/
 README_IF_PROFESSOR.md
+teacher_code
 figures/
 *.aux
 *.log

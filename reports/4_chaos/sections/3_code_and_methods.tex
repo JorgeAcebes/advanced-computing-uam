@@ -1,0 +1,50 @@
+% Archivo: sections/3_code_and_methods.tex
+\section{Marco Computacional}
+
+La resolución de los sistemas de ecuaciones diferenciales presentados en el marco teórico se realiza mediante algoritmos de integración numérica. Dado el carácter no lineal y la sensibilidad propia de los regímenes caóticos, se requiere un esquema robusto. El algoritmo elegido es el método de Runge-Kutta de cuarto orden (RK4), cuya implementación se encuentra detallada en \href{https://github.com/JorgeAcebes/advanced-computing-uam/blob/main/reports/3_projectile/3_projectile.pdf}{informes previos} \citep{proyectiles_3}.
+
+Para analizar la estructura del espacio de fases en sistemas forzados, se emplean las secciones de Poincaré. En lugar de seguir la trayectoria continua, se realiza un muestreo estroboscópico tomando los estados del sistema en intervalos de tiempo iguales al periodo del forzamiento externo, $T = \frac{2\pi}{\Omega}$. Su implementación numérica se consigue mediante la siguiente función:
+
+\begin{lstlisting}[language=Python, caption={Obtención de estados $(\theta, \omega, t)$ para la sección de Poincaré.}]
+def sec_poincare_forz(o, w, O_d, t, tol = None):
+
+    tol = (t[1]-t[0])/2 if tol is None else tol
+    mask = ((O_d*t)%(2*np.pi)) < tol
+    
+    return o[mask] , w[mask], t[mask]
+\end{lstlisting}
+
+
+Para establecer una confirmación cuantitativa y estricta del régimen caótico, se operacionaliza el cálculo del exponente de Lyapunov $\lambda$. El protocolo requiere la integración en paralelo de dos condiciones iniciales idénticas salvo por una pequeña perturbación angular ($\Delta\theta_0 \approx 0.1^\circ$). Para asegurar que la métrica refleje las propiedades intrínsecas del atractor asintótico, se desecha el primer segmento temporal (dinámica transitoria). El exponente $\lambda$ se extrae calculando la pendiente de la divergencia orbital en escala logarítmica, empleando un ajuste por mínimos cuadrados mediante la función \texttt{lingress} del módulo \texttt{scipy.stats}:
+
+\begin{lstlisting}[language=Python, caption={Cálculo lineal del exponente de Lyapunov descartando el régimen dinámico transitorio.}]
+# Diferencia absoluta entre las trayectorias perturbadas
+o2_o1 = np.abs(o_2_cont - o_1_cont)
+
+# Truncamiento de los primeros 30 segundos (fase transitoria)
+idx_est = int(30 / dt)
+t_est = t[idx_est:]
+o2_o1_est = o2_o1[idx_est:]
+
+# Filtrado de asintotas numericas y regresion
+mask = o2_o1_est > 0
+res = linregress(t_est[mask], np.log(o2_o1_est[mask]))
+lambda_ = res.slope
+\end{lstlisting}
+
+Por último, se realiza un estudio exhaustivo mediante el diagrama de bifurcación. Para ello, se realiza un barrido discreto en el intervalo $F_D \in [1.35, 1.51]$ en el que se resuelve el sistema del péndulo forzado y se extraen los últimos 30 resultados de $\theta, \omega$ de la sección de Poincaré.
+
+\begin{lstlisting}[language=Python, caption={Cálculo del diagrama de bifurcación.}]
+for i, F_D in enumerate(np.arange(1.35, 1.51, 0.001)):
+    sol = ja.rk4_solver(lambda t, y: pend_NL_forz_fric(t, y, F_D), t, y_curr)
+    o, w = sol.T
+    o = ja.restringir(o)
+    o, w, _ = ja.sec_poincare_forz(o, w, Omeg, t)
+
+    y_curr = [o[-1], w[-1]]
+
+    n_last = 30 # Nos quedaremos con los utlimos 30 resultados
+    o_last.extend(o[-n_last:]) 
+    w_last.extend(w[-n_last:])
+    F_plot.extend([F_D] * len (o[-n_last:])) 
+\end{lstlisting}

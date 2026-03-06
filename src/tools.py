@@ -404,6 +404,50 @@ def amplitud(o, frac = 1/2):
     return  (np.max(o[long_estacionaria:]) - np.min(o[long_estacionaria:]))/2
 
 
+
+# Orbits and N-body problem
+
+def velocity_orbit(r, T):
+    '''
+    Computes the orbital velocity of a body given its distance to the Sun and its period.
+    '''
+    GM_S = 4 * np.pi ** 2
+    a = T ** (2/3)
+
+    return np.sqrt(GM_S * (2/r - 1/a))
+
+def position_sum_cm(r_arr, GM_arr):
+    '''
+    Computes the position of the Sun to make the system be in the center of mass (cm)
+
+    r_arr:  ndarray of all the planets positions
+    GM_arr: ndarray of all the planets GM
+    '''
+    GM_S = 4 * np.pi ** 2
+
+    r_arr  = np.array(r_arr)
+    GM_arr = np.array(GM_arr)
+
+    rGM = r_arr @ GM_arr.T
+
+    return -rGM / GM_S
+
+def velocity_sun_cm(v_arr, GM_arr):
+    '''
+    Computes the "orbital" velocity of the Sun to make the system be in the center of mass (cm)
+
+    v_arr:  ndarray of all the planets velocities
+    GM_arr: ndarray of all the planets GM
+    '''
+    GM_S = 4 * np.pi ** 2
+
+    v_arr  = np.array(v_arr)
+    GM_arr = np.array(GM_arr)
+
+    vGM = v_arr @ GM_arr.T
+
+    return -vGM / GM_S
+    
 # __________________________________________
 
 #               PLOT STYLES
@@ -486,7 +530,7 @@ def animar_trayectorias(datos, duracion, fps=30, guardar=False, archivo='animaci
     datos: Lista de arrays. Cada array debe tener forma (dim, N_puntos).
            Si dim=2 se hace en 2D, si dim=3 se hace en 3D.
     duracion: Duración total en segundos.
-    kwargs: title, xlabel, ylabel, zlabel, xlim, ylim, zlim, colors, linestyles, labels.
+    kwargs: title, xlabel, ylabel, zlabel, xlim, ylim, zlim, colors, linestyles, labels, box_aspect
     """
     
     # 1. Análisis de dimensiones
@@ -530,6 +574,10 @@ def animar_trayectorias(datos, duracion, fps=30, guardar=False, archivo='animaci
     colores = kwargs.get('colors', ['navy', 'crimson', 'darkgreen', 'darkorange'])
     linestyles = kwargs.get('linestyles', ['-'] * len(datos))
     labels = kwargs.get('labels', [f'Cuerpo {i}' for i in range(len(datos))])
+    box_aspect = kwargs.get("box_aspect")
+
+    if box_aspect is not None:
+        ax.set_box_aspect(box_aspect)
 
     for i in range(len(datos)):
         c = colores[i % len(colores)]

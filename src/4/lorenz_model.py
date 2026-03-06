@@ -13,7 +13,7 @@ path_padre = Path(__file__).resolve().parent.parent
 sys.path.append(str(path_padre))
 import tools as ja
 importlib.reload(ja)
-ja.setup_style(base_size=19, dpi = 120)
+ja.setup_style(base_size=19, dpi = 300)
 
 
 figuras = Path(__file__).resolve().parent.parent / '4' / 'figures'
@@ -122,9 +122,9 @@ for i, R in enumerate(R_list):
             shadow, = ax_anim.plot([], [], [], '--', color='gray', alpha=0.5) # Proyección en el plano del suelo
 
 
-            ax_anim.set_xlabel('$x$ [m]', labelpad = 15)
-            ax_anim.set_ylabel('$y$ [m]', labelpad = 15)
-            ax_anim.set_zlabel('$z$ [m]', labelpad = 15)
+            ax_anim.set_xlabel('$x$', labelpad = 15)
+            ax_anim.set_ylabel('$y$', labelpad = 15)
+            ax_anim.set_zlabel('$z$', labelpad = 15)
 
 
             extra_factor = 1.2

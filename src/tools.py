@@ -573,6 +573,8 @@ def animar_trayectorias(datos, duracion, fps=30, guardar=False, archivo='animaci
     
     colores = kwargs.get('colors', ['navy', 'crimson', 'darkgreen', 'darkorange'])
     linestyles = kwargs.get('linestyles', ['-'] * len(datos))
+    linewidth = kwargs.get('linewidth', 1)
+    marker = kwargs.get('marker', 'o')
     labels = kwargs.get('labels', [f'Cuerpo {i}' for i in range(len(datos))])
     box_aspect = kwargs.get("box_aspect")
 
@@ -584,13 +586,13 @@ def animar_trayectorias(datos, duracion, fps=30, guardar=False, archivo='animaci
         ls = linestyles[i % len(linestyles)]
         
         if dim == 3:
-            linea, = ax.plot([], [], [], lw=2, color=c, linestyle=ls, label=labels[i])
-            punto, = ax.plot([], [], [], 'o', color=c, markersize=5)
+            linea, = ax.plot([], [], [], lw=linewidth, color=c, linestyle=ls, label=labels[i])
+            punto, = ax.plot([], [], [], marker, color=c, markersize=5)
             sombra, = ax.plot([], [], [], '--', color='gray', alpha=0.3)
             sombras.append(sombra)
         else:
-            linea, = ax.plot([], [], lw=2, color=c, linestyle=ls, label=labels[i])
-            punto, = ax.plot([], [], 'o', color=c, markersize=5)
+            linea, = ax.plot([], [], lw=linewidth, color=c, linestyle=ls, label=labels[i])
+            punto, = ax.plot([], [], marker, color=c, markersize=5)
             
         lineas.append(linea)
         puntos.append(punto)

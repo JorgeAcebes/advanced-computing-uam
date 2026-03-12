@@ -1,0 +1,83 @@
+% 3_code_and_methdos.tex
+\section{Marco Computacional}
+La resolución del sistema de ecuaciones diferenciales se lleva a cabo mediante algoritmos de integración temporal implementados en Python. 
+
+Para las interacciones puramente gravitacionales se ha escogido el algoritmo de Velocity Verlet. Este método es de orden $\mathcal{O}(\Delta t^2)$ y posee propiedades simplécticas, lo que garantiza conservación de la energía y el momento angular a largo plazo. La implementación es la siguiente:
+
+\begin{lstlisting}[language=Python, caption={Implementación del método de Velocity-Verlet.}]
+def verlet_solver(acc_func, t_array, x0, v0):
+    steps = len(t_array)
+    dt = t_array[1] - t_array[0]
+    
+    x_sol = np.zeros((steps, *np.shape(x0)))
+    v_sol = np.zeros((steps, *np.shape(v0)))
+    
+    x_sol[0] = x0
+    v_sol[0] = v0
+    
+    a_current = acc_func(x0)
+    
+    for i in range(steps - 1):
+        # 1. Kick (v a medio paso)
+        v_half = v_sol[i] + 0.5 * a_current * dt
+        
+        # 2. Drift (x paso completo)
+        x_next = x_sol[i] + v_half * dt
+        
+        # 3. Calcular aceleracion en nueva posicion
+        a_next = acc_func(x_next)
+        
+        # 4. Kick (v paso completo)
+        v_next = v_half + 0.5 * a_next * dt
+        
+    return x_sol, v_sol
+\end{lstlisting}
+
+Para la determinación de la precesión del cometa Halley, la integración directa de las ecuaciones de movimiento empleando la masa real de Júpiter presenta desafíos numéricos y dinámicos. Específicamente, se constató empíricamente que para factores multiplicativos de la masa joviana inferiores a $5$, el comportamiento orbital resultaba numéricamente inestable, lo que impedía la extracción de una señal de precesión robusta en las escalas de tiempo simuladas. 
+
+Para sortear esta limitación computacional, se diseñó e implementó un esquema de extrapolación lineal. El procedimiento consiste en amplificar artificialmente la influencia gravitacional de Júpiter mediante un factor multiplicativo  (en este caso, abarcando el intervalo desde $5$ hasta $11.5$), trasladando la dinámica hacia un régimen perturbativo donde el efecto de arrastre es más pronunciado y estable. Para cada configuración másica iterada, se resuelve el sistema acoplado utilizando el integrador simpléctico de \textit{Velocity Verlet}. Seguidamente, se tabula el ángulo del afelio en cada tránsito y se extrae la tasa de precesión $\dot{w}$ mediante una primera regresión lineal. 
+
+Una vez recolectadas las tasas de precesión $\dot{w}$ correspondientes a cada factor másico amplificado, se aplica una segunda regresión lineal sobre este conjunto paramétrico. Bajo la hipótesis de que la precesión escala de manera aproximadamente lineal con la masa perturbadora en este régimen, la evaluación analítica de la recta de ajuste en la unidad permite recuperar la precesión para el sistema físico real.
+
+El siguiente bloque de código describe la implementación algorítmica de este proceso de extrapolación:
+
+\begin{lstlisting}[language=Python, caption={Implementación de la extrapolación para obtener la precesión del cometa Halley.}]    
+multiplicative = np.linspace(5, 11.5,100)
+w = []
+for factor_m_J in multiplicative:
+    t = np.arange(0, 200, 0.005)
+    r_sol_d, v_sol_d = ja.verlet_solver(lambda r: grav_sun_jup(r, factor_m_J), t, np.array([r_h, 0,  r_J, 0]), np.array([0, v_h, 0, -v_J]))    
+    data_matrix = np.column_stack((r_sol_d[::1], t[::1]))
+
+    theta, transit = precesion(r_sol_d, t)
+    data_precesion = np.column_stack((theta, transit))
+
+    # Guardamos resultados para poder tenerlos disponibles a demanda
+    np.savetxt('halley_and_jupyter.txt', data_matrix, comments='')
+    np.savetxt('precesion.txt', data_precesion, comments='')
+
+    #  Desempaquetamos los resultados 
+    x_h, y_h, x_J, y_J, t = np.loadtxt('halley_and_jupyter.txt', unpack=True)    
+    theta, transit = np.loadtxt('precesion.txt', unpack=True)
+
+    # Regresion lineal
+    res = linregress(transit, theta)
+    m = res.slope
+    n = res.intercept    
+    w.append(m)
+    
+regress = linregress(multiplicative, np.array(w))
+pend = regress.slope
+C = regress.intercept
+
+# Evaluamos para la masa real de Jupiter (factor multiplicativo 1):
+precesion_real = pend * 1 + C
+\end{lstlisting}
+
+
+
+En el cálculo del problema restringido de tres cuerpos, las ecuaciones de movimiento en el sistema rotatorio dependen no solo de la posición, sino también de la velocidad debido a la aceleración de Coriolis:
+$$
+a_x = 2v_y + x - \frac{(1-\mu)(x-x_1)}{r_1^3} - \frac{\mu(x-x_2)}{r_2^3}
+$$
+Debido a esta dependencia explícita de la velocidad, el algoritmo de Verlet estándar no es aplicable. Por ello, se emplea el integrador de Runge-Kutta de cuarto orden (RK4), el cual proporciona la precisión necesaria para evaluar las trayectorias con pequeñas perturbaciones $\delta_1$ y $\delta_2$ alrededor de los puntos de Lagrange. Los puntos colineales ($L_1, L_2, L_3$) se resuelven numéricamente minimizando el gradiente a través de la función \texttt{fsolve} de SciPy, mientras que $L_4$ y $L_5$ poseen soluciones analíticas.

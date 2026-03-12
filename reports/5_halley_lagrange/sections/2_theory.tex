@@ -1,0 +1,17 @@
+% 2_theory.tex
+\section{Marco Teórico}
+Para el modelado del cometa Halley, el sistema se rige por la ley de gravitación universal de Newton. La aceleración que experimenta un cuerpo de masa despreciable debido a una masa central (el Sol) viene dada por:
+$$
+\vec{a} = - \frac{G M_S}{|\vec{r}|^3} \vec{r}
+$$
+donde $G M_S = 4 \pi^2$ en unidades de masas solares y unidades astronómicas (AU). En un sistema conservativo de este tipo, la energía mecánica específica $E/m$ y el momento angular específico $\vec{L}/m$ deben permanecer constantes en el tiempo. Al introducir un tercer cuerpo masivo (Júpiter), la ecuación de movimiento para el cometa Halley se expande para incluir la interacción mutua:
+$$
+\vec{a}_{h} = - \frac{G M_S}{|\vec{r}_{h}|^3} \vec{r}_{h} - \frac{G M_J}{|\vec{r}_{h} - \vec{r}_{J}|^3} (\vec{r}_{h} - \vec{r}_{J})
+$$
+Esta fuerza perturbativa rompe la simetría esférica pura y provoca una precesión en la órbita del cometa. 
+
+Para el sistema Tierra-Luna, nos situamos en un sistema de referencia corrotante donde ambas masas principales ($m_1$ y $m_2$) permanecen fijas en el eje $x$. Definiendo el parámetro de masa $\mu = \frac{m_2}{m_1 + m_2}$, las posiciones de los cuerpos primarios son $x_1 = -\mu$ y $x_2 = 1 - \mu$. El movimiento de una tercera masa de prueba está gobernado por un potencial efectivo que incluye los términos gravitatorios y el potencial centrífugo:
+$$
+U_{\text{eff}}(x, y) = -\frac{1 - \mu}{r_1} - \frac{\mu}{r_2} - \frac{1}{2} (x^2 + y^2)
+$$
+donde $r_1$ y $r_2$ son las distancias a las masas primarias.  Las posiciones de equilibrio relativas, conocidas como puntos de Lagrange, se obtienen al minimizar el gradiente espacial de este potencial ($\nabla U_{\text{eff}} = 0$).

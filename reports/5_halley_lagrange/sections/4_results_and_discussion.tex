@@ -6,8 +6,8 @@ Como se observa en la Figura \ref{fig:halley_orbit}, en ausencia de otros cuerpo
 
 \begin{figure}[htbp]
     \centering
-    \href{https://youtu.be/lc274xHxq8g}{\includegraphics[width=\textwidth]{figures_tex/halley_sun.png}}
-    \caption{Trayectoria orbital 2D del Cometa Halley (púrpura) en el plano orbital, con el Sol (estrella amarilla) ubicado en uno de los focos de la elipse.}
+    \href{https://youtu.be/lc274xHxq8g}{\includegraphics[width=0.9\textwidth]{figures_tex/halley_sun.png}}
+    \caption{Trayectoria orbital 2D del Cometa Halley (púrpura) en el plano orbital, con el Sol (estrella amarilla) ubicado en uno de los focos de la elipse. Animación accesible en \href{https://youtu.be/lc274xHxq8g}{YouTube}.}
     \label{fig:halley_orbit}
 \end{figure}
 
@@ -16,7 +16,7 @@ La integración numérica del sistema preserva de manera robusta los invariantes
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\textwidth]{figures_tex/energy_momentum.png}
+    \includegraphics[width=0.9\textwidth]{figures_tex/energy_momentum.png}
     \caption{Evolución temporal de las energías cinética, potencial y mecánica (izquierda) y magnitud del momento angular (derecha) por unidad de masa.}
     \label{fig:energy_momentum}
 \end{figure}
@@ -24,19 +24,19 @@ La integración numérica del sistema preserva de manera robusta los invariantes
 
 
 
-Para determinar la precesión del perihelio ($\dot{\omega}$) del cometa Halley bajo la perturbación de Júpiter, se analizó la respuesta del sistema escalando paramétricamente la masa joviana ($M_J$). Las Figuras \ref{fig:why_extrapolation} y \ref{fig:extrapolation} muestran que, para masas inferiores a $5M_J$, la señal de precesión es indeterminada o no confiable. En consecuencia, se realizó una extrapolación lineal a partir del intervalo $[5M_J, 11.5M_J]$ hacia el valor real de la masa ($1M_J$). El resultado obtenido para la tasa de precesión, empleando $\Delta t = 0.005$ años, es:$$\dot{\omega} = -1.57 \times 10^{-4} \text{ rad/año}$$ 
+Para determinar la precesión del perihelio ($\dot{\omega}$) del cometa Halley bajo la perturbación de Júpiter, se analizó la respuesta del sistema escalando paramétricamente la masa joviana ($M_J$). La Figura \ref{fig:why_extrapolation} muestra que, para ciertos valores de masas, se producen cambios de precesión abruptos, y en inspección más profunda, se observa que para masas inferiores a $5M_J$ la señal de precesión no es confiable. En consecuencia, se realizó una un filtrado de $1\sigma$ en los datos en el intervalo $[5M_J, 40M_J]$, y posteriormente una extrapolación lineal hacia el valor real de la masa ($1M_J$). El resultado se muestra en la Figura \ref{fig:extrapolation}, obteniendo una tasa de precesión:$$\dot{\omega} = -4.6 \times 10^{-5} \, \text{rad/año}$$ 
 El signo negativo indica precesión en sentido horario.
 
 \begin{figure}[htbp]
     \centering
     \begin{minipage}{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures_tex/why_extrapolation.png}
-        \caption{Variación de la tasa de precesión para factores de masa de Júpiter en el intervalo $[1, 12]$ y su ajuste lineal.}
+        \caption{Variación de la tasa de precesión para factores de masa de Júpiter y su ajuste lineal.}
         \label{fig:why_extrapolation}
     \end{minipage}\hfill
     \begin{minipage}{0.48\textwidth}
         \includegraphics[width=\textwidth]{figures_tex/extrapolation.png}
-        \caption{Variación de la tasa de precesión para factores de masa de Júpiter en la región sin fluctuaciones ($[5, 11.5]$) y su ajuste lineal.}
+        \caption{Variación de la tasa de precesión para factores de masa de Júpiter con fitro $1\sigma$ y su ajuste lineal.}
         \label{fig:extrapolation}
     \end{minipage}
 \end{figure}
@@ -94,4 +94,4 @@ Para verificar la estabilidad dinámica predicha, la Figura \ref{fig:lagrange_or
     \label{fig:lagrange_orbits}
 \end{figure}
 
-En los puntos colineales ($L_1, L_2, L_3$), las variaciones iniciales $\delta_i$ provocan una divergencia rápida, llevando a las masas de prueba a trayectorias de escape erráticas. En $L_4$, la masa de prueba permanece confinada, trazando órbitas complejas acotadas.
+En los puntos colineales ($L_1, L_2, L_3$), las variaciones iniciales $\delta_i$ provocan una divergencia rápida, llevando a las masas de prueba a trayectorias de escape erráticas. En $L_4$, la masa de prueba permanece confinada, trazando órbitas complejas acotadas. Se puede acceder a las trayectorias animadas en \href{https://www.youtube.com/watch?v=RlNEgH9QZA4&list=TLGG684h-9BVPRkxMzAzMjAyNg}{YouTube}.

@@ -20,7 +20,7 @@ ja.setup_style(base_size=19, dpi=120)
 
 # === Decidir en qué modo (prueba o final), qué apartados y si animar o no ===
 testing = 0
-apartado = [1, 0, 0] # a+b, c, d
+apartado = [0, 0, 1] # a+b, c, d
 animate = 0
 save_figs = 0
 
@@ -220,8 +220,7 @@ Se comentan las animaciones y los plots dado que al iterar sobre 50 factores mul
 '''
 
 # Se emplea extrapolación
-multiplicative = np.linspace(5, 11.5,100) # Tras inspección visual, se considera que 
-# ese intervalo de factores multiplicativos logran que la órbita no se desestabilice
+multiplicative = np.linspace(0, 40,50) 
 w = []
 m_m = []
 if apartado[2]:
@@ -298,10 +297,13 @@ if apartado[2]:
         #         figsize = (29, 7.5),
         #         colors=['darkviolet', 'gold', 'darkgoldenrod'], labels=['Halley', 'Sol', 'Júpiter'],
         #     )
-    
+# %%
     multiplicative = np.array(m_m)
-    # Máscara trivial en la configuración actual, pero útil si se desea estudiar otros factores multiplicativos
-    mask = (multiplicative > 5) & (multiplicative < 11.5)
+
+    media = np.mean(np.array(w))
+    std = np.std(np.array(w))
+
+    mask = np.abs((np.array(w) - media)) < std
 
     regress = linregress(multiplicative[mask], np.array(w)[mask] )
     pend = regress.slope

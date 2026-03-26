@@ -1,0 +1,58 @@
+% Archivo: 3_code_and_methdos.tex
+\section{Marco Computacional}
+
+La implementación computacional se divide en la evolución mediante reglas estocásticas y la resolución de ecuaciones diferenciales.
+Para los caminos aleatorios, se ha vectorizado el problema evadiendo iteraciones explícitas mediante el uso de la función de suma acumulada en la librería \texttt{NumPy}. Esto reduce drásticamente el tiempo de ejecución en Python.
+A continuación, se muestra el código correspondiente para 2D, siendo análogo en otras dimensiones:
+
+
+\begin{lstlisting}[language=Python, caption={Implementación de caminos aleatorios vectorizados en 2D.}]    
+# Inicializacion y vectorizacion del Random Walk 2D
+x = np.zeros([n_steps, 2, n_walkers]) 
+x2 = np.zeros([n_steps, n_walkers])
+
+# Generacion de pasos aleatorios con desplazamiento total 1
+d = 1 / np.sqrt(2) 
+rand = np.random.choice([-d, d], size=(n_steps, 2, n_walkers)).astype(float)
+
+# Calculo de trayectorias y cuadrado de la distancia radial
+x = np.cumsum(rand, axis=0)
+x2 = np.sum(x[:,:,:]**2, axis=1)
+\end{lstlisting}
+
+
+
+
+Para la ecuación de difusión 2D, se ha optado por un esquema de diferencias finitas explícito FTCS (Forward-Time Central-Space). La discretización de la laplaciana exige el cumplimiento del criterio de estabilidad de Von Neumann, definido por:
+$$\beta = D \Delta t \left( \frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} \right) \leq 0.5$$
+La actualización del campo escalar $u(x,y,t)$ se realiza de forma vectorizada, aplicando condiciones de contorno de Neumann homogéneas (flujo nulo) en los bordes del dominio computacional para conservar la masa total del soluto:
+
+\begin{lstlisting}[language=Python, caption={Difusión 2D determinista con condiciones de contorno de Neumann homogéneas.}]
+def diff_fin_2D(u, rx, ry):
+    # Actualizacion determinista para difusion 2D.
+    u[1:-1, 1:-1] += (
+        rx * (u[2:, 1:-1] - 2*u[1:-1, 1:-1] + u[:-2, 1:-1]) +
+        ry * (u[1:-1, 2:] - 2*u[1:-1, 1:-1] + u[1:-1, :-2]) )
+
+    # Condiciones de contorno de Neumann homogeneas
+    u[0, :],  u[:, 0]  = u[1, :],  u[:, 1]       
+    u[-1, :], u[:, -1] = u[-2, :], u[:, -2]
+
+    return u
+\end{lstlisting}
+
+
+Finalmente, en el modelo de percolación de invasión, la búsqueda del poro vecino con menor resistencia capilar en cada paso temporal plantea un problema de optimización local. Una búsqueda lineal en toda la matriz computaría en tiempo $\mathcal{O}(N)$. Para mitigar esto, garantizando un escalamiento temporal logarítmico $\mathcal{O}(\log B)$ respecto al tamaño de la frontera interfacial $B$, se implementa una cola de prioridad mediante un montículo binario:
+
+\begin{lstlisting}
+import heapq
+# Inicializacion de la cola de prioridad
+boundary = [] 
+heapq.heappush(boundary, (R[nx, ny], nx, ny))
+
+# Extraccion del nodo de minima resistencia en tiempo optimo
+r, x, y = heapq.heappop(boundary)
+
+if not cluster[x, y]:
+    cluster[x, y] = True
+\end{lstlisting}

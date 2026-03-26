@@ -28,24 +28,29 @@ save_figs = 0
 
 # == Variables y Funciones ==
 
-Long = np.array([50, 50])
+Long = np.array([50, 50]) # Semi anchura del dominio
 Nx, Ny = Long * 2 + 1  # Número puntos grid en x, y
 
-Nt = 2500
-T_max = 100.0
-dt = T_max / Nt
+Nt = 2500 # Número total de pasos
+T_max = 100.0 # Tiempo máximo
+dt = T_max / Nt # Diferencial de tiempo
 
-Lx, Ly = Long  # Longitud del dominio
-dx, dy = 2 *Lx / (Nx - 1), 2 *Ly / (Ny - 1)
+Lx, Ly = Long  # Semi longitud del dominio
+dx, dy = 2 *Lx / (Nx - 1), 2 *Ly / (Ny - 1) # Diferenciales de posición (distancia recorrida en cada paso en 1 dirección)
 D = (dx**2) / (4 * dt) # Coeficiente de difusión para que coincida con RW
 L0 = 5 # Semi anchura de la "delta"
 N_particulas = 5 * 10**5 if not testing else 10**2
 
+# Condición inicial
+cx, cy = int(Nx/2), int(Ny/2)
+nx_0 = max(1, int(L0 / dx)) 
+ny_0 = max(1, int(L0 / dy))
 
 bins = 20 # Para el histograma en random walks 
 times = np.array([0, 0.01, 0.05, 1]) # Tiempos en los que graficaremos el estado del sistema
 
 colores = ['black', 'purple', 'teal', 'yellow'] 
+
 
 def diff_fin_2D(u, rx, ry):
     """Actualización determinista para difusión 2D."""
@@ -62,26 +67,30 @@ def diff_fin_2D(u, rx, ry):
 
     return u
 
+# Función para la difusión mediante paseos aleatorios
+def diffusion(L, Nt, T_max, nx_0, N_particulas=10000):
 
-def diffusion(L, Nt, T_max, N_particulas=10000):
-
+    # Inicializamos el estado imitando las condiciones iniciales deterministas
     valid_nodes = np.arange(-nx_0, nx_0+1) * dx
     x0, y0 = np.random.choice(valid_nodes, size=N_particulas), np.random.choice(valid_nodes, size=N_particulas)
-
     pos = np.column_stack((x0,y0))
 
+    # Alocamos el espacio para la matriz de entropía y diccionarios
     S_t = np.zeros(Nt+1)
     saved_pos = {}
     histogram = {}
+
     instantes_c = times * Nt
     S_max = np.log(bins * bins)
 
+    # Realizamos un histograma con las posiciones de las partículas en el momento inicial
     H, _, _ = np.histogram2d(pos[:, 0], pos[:, 1], bins=bins, range=[[-L, L], [-L, L]], density=True)
     saved_pos[0] = pos.copy()
     histogram[0] = H.copy()
 
     for n in np.arange(1, Nt+1):
-
+        
+        # Movimiento en 1 sola dirección (x o y)
         mov = np.random.choice([-1, 1], size=N_particulas)
         eje = np.random.randint(0,2, size=N_particulas)
 
@@ -131,16 +140,12 @@ if determinista:
 
     u = np.zeros((Nx, Ny))
 
-    # Condición inicial
-    cx, cy = int(Nx/2), int(Ny/2)
-    nx_0 = max(1, int(L0 / dx)) 
-    ny_0 = max(1, int(L0 / dy))
-
     u[cx-nx_0:cx+nx_0+1, cy-ny_0:cy+ny_0+1] = 1.0
     
     u /= (np.sum(u) * dx * dy) # Normalizamos para que la densidad refleje la probabilidad
     
     print(f'El centro de la delta está en {cx,cy} y tiene un ancho {2*L0} x {2*L0}')
+
     # --- Gráficas ---
 
     fig, ax  = plt.subplots(figsize=(8, 5))
@@ -157,7 +162,6 @@ if determinista:
     axcmap[i].text(0.95, 0.95, f"$t = {0.00:.2f}\\,$s", color="white", ha="right", va="top", transform=axcmap[i].transAxes, fontsize=16)
     alpha = 0.1
     ax_3d.plot_surface(X, Y, u, alpha = alpha, label =f"$t = {0.00:.2f}\\,$s", color=colores[i])
-
 
     snapshots = times * Nt
 
@@ -217,10 +221,10 @@ if random_walk:
 
     # Evolución de la entropía
     for L in taza_size:
-        resultados[L] = diffusion(L, Nt, T_max, N_particulas=N_particulas)
+        resultados[L] = diffusion(L, Nt, T_max, nx_0, N_particulas=N_particulas)
         axs[0].plot(t_plot, resultados[L][0], label=rf"$L = {L}$")
     axs[0].axhline(np.log(bins**2), color='k', linestyle='--', label=rf"$S_{{\max}} = \ln({bins}^2)$")   
-    axs[0].set_xlabel(r"Tiempo $t")
+    axs[0].set_xlabel(r"Tiempo $t$")
     axs[0].set_ylabel(r"Entropía $S(t)$")
     axs[0].legend()
     axs[0].set_title(r"Evolución entrópica")

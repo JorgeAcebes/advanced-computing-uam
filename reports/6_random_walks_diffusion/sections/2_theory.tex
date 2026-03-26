@@ -1,0 +1,22 @@
+% Archivo: 2_theory.tex
+\section{Marco Teórico}
+
+El movimiento browniano de partículas independientes puede modelarse como un camino aleatorio. Sea $\vec{r}(t)$ la posición de un caminante tras $N$ pasos, el desplazamiento cuadrático medio esperado en un espacio de $d$ dimensiones evoluciona linealmente con el tiempo según la relación:
+\begin{equation}
+\label{eq:r2}
+\langle r^2(t) \rangle = 2dDt
+\end{equation}
+donde $D$ es el coeficiente de difusión cinemático. 
+
+En el límite continuo, la densidad de probabilidad de encontrar una partícula en una posición dada, $u(\vec{r}, t)$, obedece la ecuación de difusión macroscópica, deducible a partir de la ley de conservación de masa y la ley de Fick:
+\begin{equation}
+\frac{\partial u}{\partial t} = D \nabla^2 u
+\end{equation}
+
+Desde la perspectiva de la termodinámica estadística, la difusión de un sistema de partículas aisladas maximiza la entropía del sistema a medida que este tiende al equilibrio. Definiendo las probabilidades espaciales $p_i$ a partir de la densidad de partículas, la entropía de Shannon del sistema evoluciona como:
+\begin{equation}
+S(t) = - \sum_i p_i \ln p_i
+\end{equation}
+El tiempo de equilibrio $t_{eq}$, momento en el cual la entropía alcanza un valor estacionario máximo, escala con el cuadrado de la longitud característica del dominio $L$, tal que $t_{\rm eq} \propto L^2$.
+
+Por otro lado, la percolación de invasión describe el desplazamiento inmiscible de un fluido por otro en un medio poroso bajo el límite de fuerzas capilares dominantes. En este régimen, el fluido invasor avanza seleccionando localmente el poro adyacente que presenta la menor presión capilar de entrada. Esto se modela asignando un campo de resistencias aleatorias $R(x,y) \in [0,1]$ y garantizando que la frontera del clúster invasor (interface) progrese siempre por el nodo vecino con el valor mínimo de $R$.

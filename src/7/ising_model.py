@@ -24,7 +24,6 @@ testing = 0
 save_figs = 0
 
 
-
 # Variables globales
 
 red = 10 # tamaño de la red de espines
@@ -32,6 +31,8 @@ T = 0.25 # temperatura de la red
 
 dH = 0.5 # incremento del paso de histéresis
 
+J = 1/2
+mu = 1
 
 
 

@@ -1,3 +1,6 @@
-*.tex linguist-detectable=false
-*.bib linguist-detectable=false
-*.sty linguist-detectable=false
+reports/** linguist-documentation
+
+*.tex linguist-documentation
+*.bib linguist-documentation
+*.sty linguist-documentation
+*.cls linguist-documentation

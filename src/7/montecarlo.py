@@ -1,4 +1,4 @@
-# %% Imports y Declaraciones
+ # %% Imports y Declaraciones
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -21,10 +21,10 @@ np.random.seed(19)
 
 # === Parámetros libres del código ===
 testing = 0
-save_figs = 0
+save_figs = 1
 
 
-ball = 0
+ball = 1
 
 # ================================
 # INTEGRACIÓN MEDIANTE MONTECARLO
@@ -172,7 +172,7 @@ if ball:
     ax2.set_title('Hipervolumen en función de la dimensión')
     ax2.legend()
     if save_figs:
-        fig.savefig("figures/ball_hypervolume.png", dpi=300, bbox_inches='tight')
+        fig2.savefig("figures/ball_hypervolume.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 

@@ -9,6 +9,17 @@ from numba import njit
 from scipy.optimize import curve_fit
 from matplotlib.ticker import MaxNLocator
 
+
+
+# Importamos librerías necesarias para la regresión logística
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, RocCurveDisplay
+
+
+
 figuras = Path(__file__).resolve().parent.parent / '7' / 'figures'
 figuras.mkdir(parents=True, exist_ok=True)  
 
@@ -20,7 +31,7 @@ ja.setup_style(base_size=19, dpi=120)
 
 np.random.seed(19)
 
-
+AI =1 # Si quieres utilizar Regresión Logística para determinar si el modelo se encuetra ordenado o desordenado
 save_figs = 0
 
 # %%
@@ -118,7 +129,7 @@ def simular_ising(L, T_array):
         for _ in range(eq_steps):
             red = paso_metropolis(red, T)
             
-        # Medida
+        # Inicializamos las variables donde guardaremos los valores de Energía y Magnetización y sus cuadrados
         E_sum = 0.0
         E2_sum = 0.0
 
@@ -134,14 +145,10 @@ def simular_ising(L, T_array):
             M_sum += np.abs(M)
             M2_sum += M**2
             
-        E_prom = E_sum / mc_steps
-        E2_prom = E2_sum / mc_steps
-
-        M_prom = M_sum / mc_steps
-        M2_prom = M2_sum / mc_steps
+        E_prom, E2_prom = E_sum / mc_steps, E2_sum / mc_steps
+        M_prom, M2_prom = M_sum / mc_steps, M2_sum / mc_steps
         
-        E_vec[idx] = E_prom / N
-        M_vec[idx] = M_prom / N
+        E_vec[idx], M_vec[idx] = E_prom / N,  M_prom / N
 
         # C/N = ( <E^2> - <E>^2 ) / (N * T^2)
         C_N[idx] = (E2_prom - E_prom**2) / (N * T**2)
@@ -174,6 +181,11 @@ for L in L_list:
 
     C_N_T, chi_T, E_vec, M_vec = simular_ising(L, T_rango)
     
+    # Guardamos para aplicar el modelo de regresión logística
+    if L == L_list[-1]:
+        X = np.column_stack([M_vec, E_vec, chi_T])
+
+
     # Guardamos el máximo para la gráfica 3 y 6
     C_max_list.append(np.max(C_N_T))
     chi_max_list.append(np.max(chi_T))
@@ -182,7 +194,6 @@ for L in L_list:
     ax2.plot(T_rango, C_N_T, marker='o', markersize=3, label=f'L={L}')
     ax4.plot(T_rango, M_vec, marker='o', markersize=3, label=f'L={L}')
     ax5.plot(T_rango, chi_T, marker='o', markersize=3, label=f'L={L}')
-
 
 # --- Formateo Gráfica 1: Energía ---
 ax1.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
@@ -243,18 +254,19 @@ ax5.grid(True, alpha=0.3)
 # --- Gráfica 3: Escala de Tamaño Finito (FSS) ---
 log_L = np.log(L_list)
 chi_max_array = np.array(chi_max_list)
+chi_max_log = np.log(chi_max_array)
 
 # Ajuste lineal para verificar la divergencia logarítmica
-popt_mag, _ = curve_fit(ajuste_lineal, log_L, chi_max_array)
+popt_mag, _ = curve_fit(ajuste_lineal, log_L, chi_max_log)
 c, d = popt_mag
 
-ax6.plot(log_L, chi_max_array, 'ko', label='Datos simulados')
+ax6.plot(log_L, chi_max_log, 'ko', label='Datos simulados')
 ax6.plot(log_L, ajuste_lineal(log_L, c, d), 'r-', 
          label=f'Ajuste: $y={c:.3f}x {["-","+"][d>0]} {abs(d):.3f}$')
 
 ax6.set_xlabel(r'$\log L$')
-ax6.set_ylabel(r'$\chi_{\text{máx}}/N$')
-ax6.set_title(r'Escalado de $\chi_{\text{máx}}/N$')
+ax6.set_ylabel(r'$\log \chi_{\text{máx}}/N$')
+ax6.set_title(r'Escalado de $\log \chi_{\text{máx}}/N$')
 ax6.legend()
 ax6.grid(True, alpha=0.3)
 
@@ -266,3 +278,42 @@ plt.tight_layout()
 plt.show()
 
 
+# %%  Regresión Logística para determinar si está en estado ordenado o desordenado 
+
+if AI:
+    pipe = Pipeline([
+        ("scaler", StandardScaler()), # Utilizamos el standard scaler: x --> (x - mean) / std
+        ("clf", LogisticRegression(max_iter=2000)) # Utilizamos Logistic Regression como claisficador. 
+    ])
+
+    y = (T_rango > T_c_teo).astype(int)
+
+
+    X_train, X_test, y_train, y_test, T_train, T_test = train_test_split(
+        X, y, T, test_size=0.25, random_state=0, stratify=y 
+    ) # Dividimos en train y test (partición 75/25). No utilizamos validación. Usamos stratify para
+    # que estén repartidos de manera homogénea en el train y test
+
+    pipe.fit(X_train, y_train) # Realizamos el ajuste con el train
+    y_pred = pipe.predict(X_test) # Utilizamos el test para predecir y evaluar
+    y_proba = pipe.predict_proba(X_test)[:, 1]  # probabilidad de clase "desordenado" (1)
+
+
+    print("=== Report (test) ===")
+    print(classification_report(y_test, y_pred, target_names=["ordenado (0)", "desordenado (1)"])) # Printeamos la precisión del modelo
+    print("Confusion matrix:\n", confusion_matrix(y_test, y_pred)) # Printeamos la matriz de confusión
+    print("ROC AUC (test):", roc_auc_score(y_test, y_proba))
+
+
+
+    order = np.argsort(T_test)
+    plt.figure(figsize=(10, 6))
+    plt.plot(T_test[order], y_proba[order], marker=".", linestyle="None", alpha=0.5)
+    plt.axhline(0.5, linestyle="--")
+    plt.axvline(2.269, linestyle="--")
+    plt.xlabel("T (test)")
+    plt.ylabel("P(desordenado)")
+    plt.title("Salida del clasificador vs temperatura")
+    plt.tight_layout()
+
+    plt.show()

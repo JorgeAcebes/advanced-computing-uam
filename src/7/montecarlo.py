@@ -51,7 +51,7 @@ def inside_ball(coords, radius):
     d = len(coords.T) 
 
     r = np.sum(coords**2, axis =1)
-    inside = r < radius
+    inside = r < radius**2
 
     return inside
 

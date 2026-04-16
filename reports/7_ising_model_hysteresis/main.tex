@@ -1,0 +1,148 @@
+\documentclass[11pt,a4paper]{article}
+%\documentclass[onecolumn]{aastex62}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}      % Mejora la salida de los caracteres acentuados
+\usepackage{textcomp} 
+\usepackage[spanish]{babel} 
+
+\decimalpoint 
+% Creo que queda mejor la versión con punto que con coma
+
+\usepackage{booktabs} % Para líneas horizontales elegantes
+\usepackage{siunitx}  % Para alineación decimal y unidades
+
+\setlength{\parskip}{9pt}
+\usepackage{graphicx}
+\AtBeginDocument{\renewcommand{\contentsname}{Índice}}
+\usepackage{changepage}
+\usepackage{subcaption}
+\usepackage{longtable} 
+\usepackage{adjustbox}
+\usepackage{array}
+\usepackage{setspace}
+\usepackage{appendix}
+\usepackage{comment}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\definecolor{new_pink}{RGB}{255,20,147} 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=new_pink  
+}
+\setstretch{1.15}
+% Nuevos tipos de columna para centrado horizontal y vertical
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}m{#1}}
+% Nueva columna que combina centrado horizontal y vertical
+\newcolumntype{X}[1]{>{\centering\arraybackslash}m{#1}}
+%% Tamaño página y máhrgenes
+\usepackage[a4paper,top=1.5cm,bottom=2.0cm,left=1.75cm,right=1.75cm,marginparwidth=1.75cm]{geometry}
+%\usepackage{dcolumn}% Align table columns on decimal point
+%\usepackage{bm}% bold math
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{booktabs}
+\addto\captionsspanish{\renewcommand{\tablename}{Tabla}}
+\addto\captionsspanish{\renewcommand{\lstlistingname}{Código}}
+
+\usepackage{natbib}
+% \setcitestyle{numbers}
+\bibliographystyle{plainnat}
+\usepackage[nottoc]{tocbibind}
+\setcitestyle{authoryear}
+\newcommand{\Hb}{H$\beta$\xspace}
+\newcommand{\Ha}{H$\alpha$\xspace}
+\newcommand{\Hd}{H$\delta$\xspace}
+\newcommand{\OI}{$\left[\mathrm{O\,\textrm{\sc{i}}}\right]$\xspace}
+\newcommand{\SII}{$\left[\mathrm{S\,\textrm{\sc{ii}}}\right]$\xspace}
+\newcommand{\OIII}{$\left[\mathrm{O\,\textrm{\sc{iii}}}\right]$\xspace}
+\newcommand{\OII}{$\left[\mathrm{O\,\textrm{\sc{ii}}}\right]$\xspace}
+\newcommand{\NII}{$\left[\mathrm{N\,\textrm{\sc{ii}}}\right]$\xspace}
+\newcommand{\aap}{A\%A}
+\newcommand{\vgp}[1]{\textcolor{green}{VGP: #1}}
+\newcommand{\lda}[1]{\textcolor{blue}{LDA: #1}}
+\newcommand{\jda}[1]{\textcolor{red}{LPF: #1}}
+\usepackage{xspace}
+\newcommand{\msun}{$h^{-1}{\rm M}_{\odot}$\xspace}
+%\usepackage[maxbibnames=3,natbib=true]{biblatex}
+ \usepackage{gensymb}
+ \usepackage{multirow}
+
+\usepackage{subcaption}
+% Macros para revistas (sustituyen a las de RevTeX)
+\def\apj{ApJ}
+\def\apjl{ApJL}
+\def\mnras{MNRAS}
+\def\araa{ARA\&A}
+\def\aap{A\&A}
+\def\prl{Phys.\ Rev.\ Lett.}
+\def\prd{Phys.\ Rev.\ D}
+\def\icarus{icarus}
+\def\aj{Astrophysical Journal}
+
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+
+% Configuración de bloques de código
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codeblue}{rgb}{0,0,0.6}
+
+\lstdefinestyle{bashstyle}{
+    backgroundcolor=\color{codegray},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{gray},
+    stringstyle=\color{codeblue},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                
+    numbers=none,                    
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=python
+}
+
+\lstset{style=bashstyle}
+
+
+
+
+\begin{document}
+\pagenumbering{arabic}
+\onehalfspacing
+\begin{center}
+{\vspace{2cm}
+\textbf{\huge\ Práctica 7: Modelo de Ising e Histéresis}}\\
+\vspace{10pt}
+\large
+Jorge Acebes Hernández\hfill Computación Avanzada\hfill \href{https://github.com/JorgeAcebes/advanced-computing-uam/tree/main/src/6}{Código - GitHub}
+\end{center}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{sections/1_intro}
+\input{sections/2_theory}
+\input{sections/3_code_and_methods}
+\input{sections/4_results_and_discussion}
+\input{sections/5_conclusions}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{biblio}
+\nocite{*}
+\end{document}
+

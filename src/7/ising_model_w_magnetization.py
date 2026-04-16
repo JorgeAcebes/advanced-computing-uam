@@ -30,27 +30,42 @@ ja.setup_style(base_size=19, dpi=120)
 
 np.random.seed(19)
 
+ising = 1 # Para lo correspondiente a Isign
+Histeresis = 1 # Si quirees que haya o no histéresis
 AI =1 # Si quieres utilizar Regresión Logística para determinar si el modelo se encuetra ordenado o desordenado
-save_figs = 0
+save_figs = 1
 
 # %%
 # Parámetros globales
 J = 1.0
+mu = 1.0
 T_c_teo = 2.0 / np.log(1.0 + np.sqrt(2.0)) # ~2.269 (Temperatura de Courie teórica)
 L_list = [5, 10, 20, 30, 40] # Posibles longitudes del lado de la matriz de espines. Lo ponemos como lista para poder ampliarlo
 eq_steps = 2000   # Pasos para termalizar
 mc_steps = 10000  # Pasos de medida
 
+T_hist = 0.25
+
+H_max = 5.0
+H_ida = np.linspace(H_max, -H_max, 40)
+H_vuelta = np.linspace(-H_max, H_max, 40)
+H_list = np.concatenate((H_ida, H_vuelta))
+
+
 # Rango de temperaturas (más fino alrededor de T_c)
 T_rango = np.concatenate((
-    np.linspace(1.5, 2.1, 15),
+    np.linspace(1.75, 2.1, 15),
     np.linspace(2.15, 2.4, 30), # Fino cerca de T_c
     np.linspace(2.45, 10.2, 150)
 ))
 
+
+
 @njit
-def paso_metropolis(red, T):
+def paso_metropolis(red, T, H = None):
     """Realiza un barrido completo (N=L*L intentos) sobre la red."""
+    np.random.seed(19)
+    H = 0 if H is None else H
     L = red.shape[0]
     for _ in range(L * L):
         # Escogemos una celda al azar
@@ -60,7 +75,7 @@ def paso_metropolis(red, T):
         
         # Condiciones de contorno periódicas
         vecinos = red[(i+1)%L, j] + red[i, (j+1)%L] + red[(i-1)%L, j] + red[i, (j-1)%L]
-        dE = 2.0 * J * s * vecinos
+        dE = 2.0 * s * (J * vecinos + mu * H)
         
         # Criterio de aceptación
         if dE <= 0 or np.random.rand() < np.exp(-dE / T):
@@ -68,218 +83,264 @@ def paso_metropolis(red, T):
     return red
 
 
-@njit
-def paso_metropolis_sistemático(red, T):
-    """Realiza un barrido completo (N=L*L intentos) sistemático (permitimos que todos los 
-    espines tengan la posibilidad de invertirse) sobre la red."""
-    L = red.shape[0]
-    for i in range(L):
-        for j in range(L):
-            s = red[i, j]
-        
-        # Condiciones de contorno periódicas
-        vecinos = red[(i+1)%L, j] + red[i, (j+1)%L] + red[(i-1)%L, j] + red[i, (j-1)%L]
-        dE = 2.0 * J * s * vecinos
-        
-        # Criterio de aceptación
-        if dE <= 0 or np.random.rand() < np.exp(-dE / T):
-            red[i, j] = -s
-    return red
 
 
 @njit
 def calcular_energia(red):
     """Calcula la energía total de la configuración actual."""
+    np.random.seed(19)
     L = red.shape[0]
     E = 0.0
     for i in range(L):
         for j in range(L):
             S = red[i, j]
-            vecinos = red[(i+1)%L, j] + red[i, (j+1)%L]
-            E += -J * S * vecinos
+            vecinos = red[(i+1)%L, j] + red[i, (j+1)%L]  
+            E += -J * S * vecinos 
     return E
 
 
 @njit
 def calcular_magnetization(red):
     """Calcula la magnetización total de la configuración actual."""
+    np.random.seed(19)
     L = red.shape[0]
     M = 0.0
     for i in range(L):
         for j in range(L):
             S = red[i, j]
-            M += S
+            M += S 
     return M
 
 
-def simular_ising(L, T_array):
-    """Simula la red para un L dado y un array de temperaturas."""
-    N = L * L
-    C_N = np.zeros(len(T_array))
-    chi = np.zeros(len(T_array))
-    E_vec = np.zeros(len(T_array))
-    M_vec = np.zeros(len(T_array))
-    
-    for idx, T in enumerate(T_array):
-        # Inicialización aleatoria (alta temperatura)
-        red = np.random.choice(np.array([-1, 1]), size=(L, L)) # Escogemos +- 1 para cada espín
+if ising:
+    def simular_ising(L, T_array):
+        """Simula la red para un L dado y un array de temperaturas."""
+        N = L * L
+        C_N = np.zeros(len(T_array))
+        chi = np.zeros(len(T_array))
+        E_vec = np.zeros(len(T_array))
+        M_vec = np.zeros(len(T_array))
         
-        # Termalización
-        for _ in range(eq_steps):
-            red = paso_metropolis(red, T)
+        for idx, T in enumerate(T_array):
+            # Inicialización aleatoria (alta temperatura)
+            red = np.random.choice(np.array([-1, 1]), size=(L, L)) # Escogemos +- 1 para cada espín
             
-        # Inicializamos las variables donde guardaremos los valores de Energía y Magnetización y sus cuadrados
-        E_sum = 0.0
-        E2_sum = 0.0
+            # Termalización
+            for _ in range(eq_steps):
+                red = paso_metropolis(red, T)
+                
+            # Inicializamos las variables donde guardaremos los valores de Energía y Magnetización y sus cuadrados
+            E_sum = 0.0
+            E2_sum = 0.0
 
-        M_sum = 0.0
-        M2_sum = 0.0
+            M_sum = 0.0
+            M2_sum = 0.0
 
-        for _ in range(mc_steps):
-            red = paso_metropolis(red, T)
-            E = calcular_energia(red)
-            M = calcular_magnetization(red)
-            E_sum += E
-            E2_sum += E**2
-            M_sum += np.abs(M)
-            M2_sum += M**2
+            for _ in range(mc_steps):
+                red = paso_metropolis(red, T)
+                E = calcular_energia(red)
+                M = calcular_magnetization(red)
+                E_sum += E
+                E2_sum += E**2
+                M_sum += np.abs(M)
+                M2_sum += M**2
+                
+            E_prom, E2_prom = E_sum / mc_steps, E2_sum / mc_steps
+            M_prom, M2_prom = M_sum / mc_steps, M2_sum / mc_steps
             
-        E_prom, E2_prom = E_sum / mc_steps, E2_sum / mc_steps
-        M_prom, M2_prom = M_sum / mc_steps, M2_sum / mc_steps
+            E_vec[idx], M_vec[idx] = E_prom / N,  M_prom / N
+
+            # C/N = ( <E^2> - <E>^2 ) / (N * T^2)
+            C_N[idx] = (E2_prom - E_prom**2) / (N * T**2)
+            
+            # chi/N = ( <M^2> - <M>^2 ) / (N * T)        
+            chi[idx] = (M2_prom - M_prom**2) / (N * T)
+        return C_N, chi, E_vec, M_vec
+
+
+    # Función para el ajuste lineal
+    def ajuste_lineal(x, a, b):
+        return a * x + b
+
+    # Ejecución y análisis
+    C_max_list = []
+    chi_max_list = []
+
+
+    plt.figure(figsize=(18, 10))
+
+    # Definimos los subplots de antemano para mayor claridad
+    ax1 = plt.subplot(2, 3, 1)
+    ax2 = plt.subplot(2, 3, 2)
+    ax3 = plt.subplot(2, 3, 3)
+    ax4 = plt.subplot(2, 3, 4)
+    ax5 = plt.subplot(2, 3, 5)
+    ax6 = plt.subplot(2, 3, 6)
+
+
+    for L in L_list:
+
+        C_N_T, chi_T, E_vec, M_vec = simular_ising(L, T_rango)
         
-        E_vec[idx], M_vec[idx] = E_prom / N,  M_prom / N
+        # Guardamos para aplicar el modelo de regresión logística
+        if L == L_list[-1]:
+            X = np.column_stack([M_vec, E_vec, chi_T])
 
-        # C/N = ( <E^2> - <E>^2 ) / (N * T^2)
-        C_N[idx] = (E2_prom - E_prom**2) / (N * T**2)
+
+        # Guardamos el máximo para la gráfica 3 y 6
+        C_max_list.append(np.max(C_N_T))
+        chi_max_list.append(np.max(chi_T))
+
+        ax1.plot(T_rango, E_vec, marker='o', markersize=3, label=f'L={L}')
+        ax2.plot(T_rango, C_N_T, marker='o', markersize=3, label=f'L={L}')
+        ax4.plot(T_rango, M_vec, marker='o', markersize=3, label=f'L={L}')
+        ax5.plot(T_rango, chi_T, marker='o', markersize=3, label=f'L={L}')
+
+    # --- Formateo Gráfica 1: Energía ---
+    ax1.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
+    ax1.set_xlabel('Temperatura ($T$)')
+    ax1.set_ylabel(r'Energía')
+    ax1.set_title(r'Energía en función de $T$')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+
+
+
+    # --- Formateo Gráfica 2: C/N ---
+    ax2.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
+    ax2.set_xlabel('Temperatura ($T$)')
+    ax2.set_ylabel(r'$C/N$')
+    ax2.set_title('Capacidad Calorífica')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+
+
+    # --- Gráfica 3: Escala de Tamaño Finito (FSS) ---
+    log_L = np.log(L_list)
+    C_max_array = np.array(C_max_list)
+
+    # Ajuste lineal para verificar la divergencia logarítmica
+    popt, _ = curve_fit(ajuste_lineal, log_L, C_max_array)
+    a, b = popt
+
+    ax3.plot(log_L, C_max_array, 'ko', label='Datos simulados')
+    ax3.plot(log_L, ajuste_lineal(log_L, a, b), 'r-', 
+            label=f'Ajuste: $y={a:.3f}x {["-","+"][b>0]} {abs(b):.3f}$')
+
+    ax3.set_xlabel(r'$\log L$')
+    ax3.set_ylabel(r'$C_{\text{máx}}/N$')
+    ax3.set_title(r'Escalado de $C_{\text{máx}}/N$')
+    ax3.legend()
+    ax3.grid(True, alpha=0.3)
+
+
+    # --- Formateo Gráfica 4: Magnetización ---
+    ax4.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
+    ax4.set_xlabel('Temperatura ($T$)')
+    ax4.set_ylabel('Magnetización')
+    ax4.set_title(r'Magnetización en función de $T$')
+    ax4.legend()
+    ax4.grid(True, alpha=0.3)
+
+
+    # --- Formateo Gráfica 5: chi/N ---
+    ax5.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
+    ax5.set_xlabel('Temperatura ($T$)')
+    ax5.set_ylabel(r'$\chi/N$')
+    ax5.set_title('Susceptibilidad Magnética')
+    ax5.legend()
+    ax5.grid(True, alpha=0.3)
+
+
+    # --- Gráfica 3: Escala de Tamaño Finito (FSS) ---
+    log_L = np.log(L_list)
+    chi_max_array = np.array(chi_max_list)
+    chi_max_log = np.log(chi_max_array)
+
+    # Ajuste lineal para verificar la divergencia logarítmica
+    popt_mag, _ = curve_fit(ajuste_lineal, log_L, chi_max_log)
+    c, d = popt_mag
+
+    ax6.plot(log_L, chi_max_log, 'ko', label='Datos simulados')
+    ax6.plot(log_L, ajuste_lineal(log_L, c, d), 'r-', 
+            label=f'Ajuste: $y={c:.3f}x {["-","+"][d>0]} {abs(d):.3f}$')
+
+    ax6.set_xlabel(r'$\log L$')
+    ax6.set_ylabel(r'$\log \chi_{\text{máx}}/N$')
+    ax6.set_title(r'Escalado de $\log \chi_{\text{máx}}/N$')
+    ax6.legend()
+    ax6.grid(True, alpha=0.3)
+
+
+    if save_figs:
+        plt.savefig("figures/multiplot_energy_mag.png", bbox_inches='tight')
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+if Histeresis:
+    L = 40
+    def simular_hist(L, H_array, T):
+        """Simula la red para un L dado y un array de H."""
+        N = L * L
+        M_vec = np.zeros(len(H_array))
+        red = np.ones((L, L)) # Iniciación a Baja temperatura
         
-        # chi/N = ( <M^2> - <M>^2 ) / (N * T)        
-        chi[idx] = (M2_prom - M_prom**2) / (N * T)
-    return C_N, chi, E_vec, M_vec
+        for idx, H in enumerate(H_array):
+            
+            # Termalización
+            for _ in range(eq_steps):
+                red = paso_metropolis(red, T, H)
+                
+            # Inicializamos las variables donde guardaremos los valores de Energía y Magnetización y sus cuadrados
+            M_sum = 0.0
 
-# Función para el ajuste lineal
-def ajuste_lineal(x, a, b):
-    return a * x + b
+            for _ in range(mc_steps):
+                red = paso_metropolis(red, T, H)
+                M = calcular_magnetization(red)
+                M_sum += M
 
-# Ejecución y análisis
-C_max_list = []
-chi_max_list = []
-
-
-plt.figure(figsize=(18, 10))
-
-# Definimos los subplots de antemano para mayor claridad
-ax1 = plt.subplot(2, 3, 1)
-ax2 = plt.subplot(2, 3, 2)
-ax3 = plt.subplot(2, 3, 3)
-ax4 = plt.subplot(2, 3, 4)
-ax5 = plt.subplot(2, 3, 5)
-ax6 = plt.subplot(2, 3, 6)
-
-
-for L in L_list:
-
-    C_N_T, chi_T, E_vec, M_vec = simular_ising(L, T_rango)
-    
-    # Guardamos para aplicar el modelo de regresión logística
-    if L == L_list[-1]:
-        X = np.column_stack([M_vec, E_vec, chi_T])
-
-
-    # Guardamos el máximo para la gráfica 3 y 6
-    C_max_list.append(np.max(C_N_T))
-    chi_max_list.append(np.max(chi_T))
-
-    ax1.plot(T_rango, E_vec, marker='o', markersize=3, label=f'L={L}')
-    ax2.plot(T_rango, C_N_T, marker='o', markersize=3, label=f'L={L}')
-    ax4.plot(T_rango, M_vec, marker='o', markersize=3, label=f'L={L}')
-    ax5.plot(T_rango, chi_T, marker='o', markersize=3, label=f'L={L}')
-
-# --- Formateo Gráfica 1: Energía ---
-ax1.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
-ax1.set_xlabel('Temperatura ($T$)')
-ax1.set_ylabel(r'Energía')
-ax1.set_title(r'Energía en función de $T$')
-ax1.legend()
-ax1.grid(True, alpha=0.3)
+            M_prom = M_sum / mc_steps
+            
+            M_vec[idx] = M_prom / N
+            
+        return M_vec
 
 
 
-# --- Formateo Gráfica 2: C/N ---
-ax2.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
-ax2.set_xlabel('Temperatura ($T$)')
-ax2.set_ylabel(r'$C/N$')
-ax2.set_title('Capacidad Calorífica')
-ax2.legend()
-ax2.grid(True, alpha=0.3)
+    plt.figure(figsize=(8, 6))
+
+    # Definimos los subplots de antemano para mayor claridad
+    ax1 = plt.subplot(1, 1, 1)
+
+    M_vec = simular_hist(L, H_list, T_hist)
+
+    M_vec = np.reshape(M_vec, (-1,1))
+
+    ax1.plot(H_list, M_vec, marker='o', markersize=3)
+    ax1.set_xlabel('H')
+    ax1.set_ylabel(r'Magnetización')
+    ax1.set_title(r'Ciclo de Histéresis')
+    ax1.grid(True, alpha=0.3)
 
 
-# --- Gráfica 3: Escala de Tamaño Finito (FSS) ---
-log_L = np.log(L_list)
-C_max_array = np.array(C_max_list)
 
-# Ajuste lineal para verificar la divergencia logarítmica
-popt, _ = curve_fit(ajuste_lineal, log_L, C_max_array)
-a, b = popt
+    if save_figs:
+        plt.savefig("figures/hist.png", bbox_inches='tight')
 
-ax3.plot(log_L, C_max_array, 'ko', label='Datos simulados')
-ax3.plot(log_L, ajuste_lineal(log_L, a, b), 'r-', 
-         label=f'Ajuste: $y={a:.3f}x {["-","+"][b>0]} {abs(b):.3f}$')
-
-ax3.set_xlabel(r'$\log L$')
-ax3.set_ylabel(r'$C_{\text{máx}}/N$')
-ax3.set_title(r'Escalado de $C_{\text{máx}}/N$')
-ax3.legend()
-ax3.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 
 
-# --- Formateo Gráfica 4: Magnetización ---
-ax4.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
-ax4.set_xlabel('Temperatura ($T$)')
-ax4.set_ylabel('Magnetización')
-ax4.set_title(r'Magnetización en función de $T$')
-ax4.legend()
-ax4.grid(True, alpha=0.3)
 
-
-# --- Formateo Gráfica 5: chi/N ---
-ax5.axvline(T_c_teo, color='k', linestyle='--', label=r'$T_c$ teórica')
-ax5.set_xlabel('Temperatura ($T$)')
-ax5.set_ylabel(r'$\chi/N$')
-ax5.set_title('Susceptibilidad Magnética')
-ax2.legend()
-ax5.grid(True, alpha=0.3)
-
-
-# --- Gráfica 3: Escala de Tamaño Finito (FSS) ---
-log_L = np.log(L_list)
-chi_max_array = np.array(chi_max_list)
-chi_max_log = np.log(chi_max_array)
-
-# Ajuste lineal para verificar la divergencia logarítmica
-popt_mag, _ = curve_fit(ajuste_lineal, log_L, chi_max_log)
-c, d = popt_mag
-
-ax6.plot(log_L, chi_max_log, 'ko', label='Datos simulados')
-ax6.plot(log_L, ajuste_lineal(log_L, c, d), 'r-', 
-         label=f'Ajuste: $y={c:.3f}x {["-","+"][d>0]} {abs(d):.3f}$')
-
-ax6.set_xlabel(r'$\log L$')
-ax6.set_ylabel(r'$\log \chi_{\text{máx}}/N$')
-ax6.set_title(r'Escalado de $\log \chi_{\text{máx}}/N$')
-ax6.legend()
-ax6.grid(True, alpha=0.3)
-
-
-if save_figs:
-    plt.savefig("figures/multiplot_analysis_rw.png", bbox_inches='tight')
-
-plt.tight_layout()
-plt.show()
-
-
-# %%  Regresión Logística para determinar si está en estado ordenado o desordenado 
+#  Regresión Logística para determinar si está en estado ordenado o desordenado 
 
 if AI:
+    if not ising:
+        print('Debes correr el modelo de ising para que AI funcione')
     pipe = Pipeline([
         ("scaler", StandardScaler()), # Utilizamos el standard scaler: x --> (x - mean) / std
         ("clf", LogisticRegression(max_iter=2000)) # Utilizamos Logistic Regression como claisficador. 

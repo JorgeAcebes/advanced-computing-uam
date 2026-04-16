@@ -1,0 +1,69 @@
+\section{Resultados y Análisis}
+
+\subsection{Transición de Fase y Criticidad}
+
+
+% --- Bloque 1: Termodinámica y Transición de Fase ---
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/multiplot_energy_magnetization_susceptibility_capacity.png}
+    \caption{Evolución de observables termodinámicas (Energía, Magnetización, Capacidad Calorífica $C/N$ y Susceptibilidad $\chi/N$) frente a la temperatura $T$ para redes de espines de tamaño $L \in \{5, 10, 20, 30, 40\}$. A la derecha, ajustes de escalado finito sobre los valores máximos.}
+    \label{fig:thermodynamics_ising}
+\end{figure}
+
+
+La Figura \ref{fig:thermodynamics_ising} expone las métricas promediadas tras las simulaciones de Monte Carlo. La energía del sistema registra un punto de inflexión alrededor del dominio $T \in [2.15, 2.4]$, provocando un máximo agudo en la capacidad calorífica $C/N$. En sincronía, la magnetización decae marcadamente desde $1.0$ hacia $0.0$, generando una divergencia correlativa en la susceptibilidad magnética $\chi/N$. Las gráficas de escalado demuestran una dependencia estricta con el tamaño del retículo, resultando en un ajuste empírico $C_{\text{máx}}/N = 0.557\ln L + 0.105$ y una progresión lineal en escala log-log para la susceptibilidad con ecuación $\ln(\chi_{\text{máx}}/N) = 1.814 \ln L - 3.184$.
+
+Estos resultados atestiguan una transición de fase continua (segundo orden) característica del modelo de Ising bidimensional. Las singularidades convergen exactamente en la temperatura crítica teórica de Onsager, $T_c \approx 2.269$, delimitando la rotura espontánea de simetría continua hacia un estado paramagnético.
+En cuanto a la linealidad observada en los diagramas de dispersión de escalado de tamaño finito, estos corroboran la dependencia funcional descrita en las Expresiones \ref{eq:c} y \ref{eq:ln_chi}. En particular, la pendiente en la susceptibilidad representa la relación $\gamma/\nu \approx 1.814$, arrojando un error relativo del $\epsilon = 3.66\%$ frente al valor teórico ($\gamma/\nu = 1.75$). Esto es explicable por la persistencia de correcciones de tamaño finito de orden superior para $L \le 40$.
+
+
+
+% --- Bloque 2: Ciclo de Histéresis ---
+
+\subsection{Dinámica de Histéresis}
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{figures/hist.png}
+    \caption{Curva del ciclo de histéresis demostrando la respuesta magnética del sistema frente a un gradiente de campo externo ($H$) bajo condiciones isotérmicas ($T=0.25 < T_c$).}
+    \label{fig:hysteresis_loop}
+\end{figure}
+
+
+Tal como ilustra la Figura \ref{fig:hysteresis_loop}, la iteración escalar del campo $H \in [-5, 5]$ a baja temperatura, $T=0.25$, traza una morfología de histéresis fundamentalmente cuadrada. Este ciclo visibiliza de forma gráfica el principio de memoria magnética y metaestabilidad asociado a sistemas ordenados bajo el dominio $T < T_c$. La inercia para mantener su vector de alineación colectivo (pese a retirar $H$) deriva intrínsecamente del acoplamiento energético ferromagnético dictado por la constante de interacción intermolecular $J > 0$. El paralelismo agudo en las franjas de conmutación ($\pm 2.0$) reafirma que bajo esa condición de temperatura, la reinversión no sigue un mecanismo suave de nucleación, sino que actúa como una transición de primer orden (efecto de avalancha estructural) que se detona instantáneamente tan pronto como el trabajo del Hamiltoniano de Zeeman, denotado como $\mathcal{H}_{Zeeman} = -H \sum s_i$, logra anular competitivamente la protección energética impuesta por la simetría ferroica preexistente.
+
+
+
+
+
+
+
+% --- Bloque 3: Clasificación Automática mediante Machine Learning ---
+
+\subsection{Clasificación de Fases mediante Regresión Logística}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/logistic_regression.png}
+    \caption{Respuesta estocástica del modelo clasificador, ilustrando la probabilidad predicha de estado paramagnético (desordenado) en función de la variable intensiva del entorno ($T$).}
+    \label{fig:ml_classifier_output}
+\end{figure}
+
+
+La Figura \ref{fig:ml_classifier_output} mapea la topología predictiva evaluada sobre el conjunto de prueba (\textit{test}). La distribución estocástica conforma una función sigmoide altamente definida. En el régimen de baja temperatura ($T \ll T_c$), la asignación a la clase desordenada es residual ($P \approx 0.0$). A altas temperaturas ($T > 2.4$), la certeza de desorden se maximiza iterativamente ($P \approx 1.0$). El umbral de decisión matemática ($P = 0.5$) se asienta sobre una abscisa coincidente con $T \approx 2.27$, acotado en un rango de incerteza muy estrecho. Este desempeño prácticamente ideal queda matemáticamente respaldado por la matriz de confusión obtenida:
+
+\begin{equation}
+    C =  \begin{pmatrix}
+    TP & FP \\
+    FN & TN
+    \end{pmatrix} = \begin{pmatrix}
+    7 & 0 \\
+    1 & 41
+    \end{pmatrix}
+    \label{eq:confusion_matrix}
+\end{equation}
+donde $TP, FP,FN, TN$ corresponden a verdadero positivo, falso positivo, falso negativo, verdadero negativo, respectivamente.
+
+La estructura casi diagonal observada tiene asociada un $accuracy = 0.98$, recayendo casi la totalidad de las predicciones en los Verdaderos Positivos y Verdaderos Negativos, con una pequeña tasa de error. Este resultado refleja que la trivialidad algorítmica de este ejercicio en particular era muy alta. Al inyectar como características de entrada las magnitudes macroscópicas directas del sistema $(M, E, \chi)$, el problema posee una complejidad determinista que induce a una solución analíticamente trivial para una regresión logística: el modelo simplemente optimiza un umbral para el decaimiento abrupto de la magnetización (el parámetro de orden ya resuelto por la simulación). En consecuencia, este planteamiento no pretende revelar nueva física, sino que se establece como un modelo introductorio y pedagógico, diseñado estrictamente para demostrar de forma clara y visual cómo se pueden integrar las herramientas de \textit{Machine Learning} en la caracterización de problemas de física y transiciones de fase.

@@ -1,0 +1,42 @@
+% sections/2_theory.tex
+\section{Marco Teórico}
+El sistema se describe mediante un conjunto de variables de espín $s_i \in \{-1, +1\}$ dispuestas en una red cuadrada bidimensional de lado $L$, con $N = L^2$ sitios. El hamiltoniano del sistema, considerando interacciones a primeros vecinos y la interacción Zeeman con un campo magnético externo $H$, viene dado por:
+\begin{equation}
+    \mathcal{H} = -J \sum_{\langle i,j \rangle} s_i s_j - \mu H \sum_{i=1}^N s_i
+\end{equation}
+donde $J>0$ es la constante de acoplamiento ferromagnético y $\mu$ es el momento magnético de cada espín. El parámetro de orden macroscópico, la magnetización total de una configuración, se define como la suma de todos los espines del sistema: 
+\begin{equation}
+    M = \sum_{i=1}^N s_i
+\end{equation}
+
+En el caso particular de ausencia de campo magnético ($H = 0$), la solución analítica exacta obtenida por \citet{PhysRev.65.117} predice una transición de fase continua a una temperatura crítica $T_c$ dada por:
+\begin{equation}
+    k_B T_c = \frac{2J}{\ln(1+\sqrt{2})} \approx 2.269 J
+\end{equation}
+adoptando un sistema de unidades naturales donde la constante de Boltzmann es $k_B = 1$. 
+
+En simulaciones de tamaño finito y en ausencia de un campo externo que rompa la simetría, el sistema puede transicionar globalmente entre estados de magnetización positiva y negativa. Para evitar que el promedio térmico se anule artificialmente por debajo de $T_c$, se evalúa el valor esperado del valor absoluto de la magnetización por espín:
+\begin{equation}
+    m = \frac{\langle |M| \rangle}{N}
+\end{equation}
+
+Las fluctuaciones de la energía interna y de la magnetización determinan, a través del teorema de fluctuación-disipación, la capacidad calorífica $C$ y la susceptibilidad magnética $\chi$, respectivamente:
+\begin{equation}
+    \frac{C}{N} = \frac{\langle E^2 \rangle - \langle E \rangle^2}{N k_B T^2}, \quad \quad \frac{\chi}{N} = \frac{\langle M^2 \rangle - \langle |M| \rangle^2}{N k_B T}
+\end{equation}
+
+En la vecindad de $T_c$, la teoría de escalado de tamaño finito predice que estas magnitudes divergen. La capacidad calorífica máxima diverge logarítmicamente, mientras que la susceptibilidad máxima escala según una ley de potencias:
+\begin{equation}
+\frac{C_{\text{máx}}}{N} \propto \ln L, \qquad 
+    \frac{\chi_{\text{máx}}}{N} \propto L^{\gamma/\nu}
+    \label{eq:c}
+\end{equation}
+donde $\nu = 1$ es el exponente asociado a la longitud de correlación y $\gamma = 7/4$ es el exponente de la susceptibilidad magnética. De esta manera, al aplicar logaritmos, esta relación se linealiza para su comprobación empírica como:
+\begin{equation}
+    \ln\left(\frac{\chi_{\text{máx}}}{N}\right) \propto 1.75 \ln L + \rm cte
+    \label{eq:ln_chi}
+\end{equation}
+
+Por otro lado, cuando el sistema opera por debajo de la temperatura crítica ($T < T_c$) en presencia de un campo magnético variable, presenta una fuerte dependencia de su historia térmica y magnética debido a la aparición de estados metaestables. Al someter al material a un campo magnético cíclico ($H \rightarrow -H \rightarrow H$), el parámetro de orden no sigue una trayectoria termodinámica reversible, sino que describe un ciclo de histéresis.
+
+Finalmente, la identificación de la transición termodinámica puede formularse matemáticamente como un problema de clasificación binaria. Las variables macroscópicas estocásticas del sistema (energía $E$, magnetización $M$ y susceptibilidad $\chi$) actúan como vectores de características (\textit{features}). Esto permite a un algoritmo de regresión logística estimar la probabilidad posterior de que una configuración pertenezca a la fase desordenada paramagnética ($T > T_c$).

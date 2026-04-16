@@ -1,0 +1,50 @@
+% sections/3_code_and_methods.tex
+\section{Marco Computacional}
+
+La evaluación de los observables termodinámicos requiere muestrear el espacio de configuraciones, cuya dimensión es $2^N$. Para sortear esta intratabilidad computacional, se implementa el método de Monte Carlo acoplado al algoritmo de Metropolis, generando una cadena de Markov que converge a la distribución de Boltzmann.
+
+El algoritmo selecciona aleatoriamente un espín $s_i$ y evalúa la diferencia de energía $\Delta E$ asociada a su inversión ($s_i \rightarrow -s_i$). Si $\Delta E \le 0$, el cambio se acepta; si $\Delta E > 0$, se acepta con una probabilidad $p = \exp(-\Delta E / T)$. Para mitigar los efectos de borde, se aplican condiciones de contorno periódicas.
+\clearpage
+
+\begin{lstlisting}[language=python, caption=Implementación del paso de Metropolis optimizado con Numba.]
+@njit
+def paso_metropolis(red, T):
+    L = red.shape[0]
+    for _ in range(L * L):
+        i = np.random.randint(L)
+        j = np.random.randint(L)
+        s = red[i, j]
+        
+        # Condiciones de contorno periodicas
+        vecinos = red[(i+1)%L, j] + red[i, (j+1)%L] + red[(i-1)%L, j] + red[i, (j-1)%L]
+        dE = 2.0 * J * s * vecinos
+        
+        if dE <= 0 or np.random.rand() < np.exp(-dE / T):
+            red[i, j] = -s
+    return red
+\end{lstlisting}
+
+
+La presencia del campo magnético modifica la variación de energía local al intentar invertir un espín $s_i$, resultando en $\Delta E = 2 s_i (J \sum s_j + \mu H)$. Para la evaluación de la histéresis, se implementó una rutina específica que inicializa la red en un estado completamente ordenado (emulando muy baja temperatura). Posteriormente, se realiza un barrido paramétrico sobre el campo magnético $H$. Es fundamental computacionalmente que el microestado final de un paso de $H$ sirva como condición inicial del siguiente, preservando así la memoria magnética que da origen al ciclo.
+
+Cabe destacar que, dado que Python estándar es ineficiente en bucles anidados intensivos, se recurre a la compilación *Just-In-Time* (JIT) mediante la librería \texttt{Numba} (\texttt{@njit}). Esto reduce la complejidad temporal de la ejecución de forma drástica, permitiendo simular redes de hasta $L=40$ con $10000$ pasos de medida en un tiempo computacional aceptable. El sistema se termaliza durante $2000$ pasos antes de comenzar la recolección de estadísticas energéticas para el cálculo de fluctuaciones.
+
+
+
+
+Una vez obtenidas las series termodinámicas para la red de mayor tamaño ($L=40$), se procede a la etapa de aprendizaje automático. Se define una variable objetivo binaria $y$ que toma el valor $1$ si la temperatura de simulación supera la teórica ($T > T_c$, fase desordenada) y $0$ en caso contrario. 
+
+\begin{lstlisting}[language=python, caption=Pipeline de clasificación con Scikit-Learn.]
+pipe = Pipeline([
+    ("scaler", StandardScaler()), 
+    ("clf", LogisticRegression(max_iter=2000)) 
+])
+
+X_train, X_test, y_train, y_test, T_train, T_test = train_test_split(
+    X, y, T_rango, test_size=0.25, random_state=0, stratify=y 
+)
+pipe.fit(X_train, y_train)
+y_pred = pipe.predict(X_test)
+\end{lstlisting}
+
+Los predictores $\mathbf{X} = (M, E, \chi)$ se normalizan restando la media y dividiendo por la desviación típica (\texttt{StandardScaler}). Los datos se dividen en un $75\%$ para entrenamiento y un $25\%$ para prueba, utilizando un muestreo estratificado (\texttt{stratify=y}) para garantizar que la proporción de datos en fases ordenadas y desordenadas sea idéntica en ambos conjuntos, previniendo sesgos en el entrenamiento del clasificador.

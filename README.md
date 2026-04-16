@@ -63,4 +63,4 @@ Detailed physical analysis and numerical results are available in the `/reports`
 - **Environment:** VS Code.
 
 ## Author
-**Jorge Acebes** BSc Physics Student – Universidad Autónoma de Madrid (UAM).
+**Jorge Acebes**: BSc Physics Student – Universidad Autónoma de Madrid (UAM).

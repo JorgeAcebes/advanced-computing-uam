@@ -10,7 +10,6 @@ from scipy.optimize import curve_fit
 from matplotlib.ticker import MaxNLocator
 
 
-
 # Importamos librerías necesarias para la regresión logística
 from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
 from sklearn.pipeline import Pipeline
@@ -38,13 +37,13 @@ save_figs = 0
 # Parámetros globales
 J = 1.0
 T_c_teo = 2.0 / np.log(1.0 + np.sqrt(2.0)) # ~2.269 (Temperatura de Courie teórica)
-L_list = [4, 7] # Posibles longitudes del lado de la matriz de espines. Lo ponemos como lista para poder ampliarlo
+L_list = [5, 10, 20, 30, 40] # Posibles longitudes del lado de la matriz de espines. Lo ponemos como lista para poder ampliarlo
 eq_steps = 2000   # Pasos para termalizar
 mc_steps = 10000  # Pasos de medida
 
 # Rango de temperaturas (más fino alrededor de T_c)
 T_rango = np.concatenate((
-    np.linspace(0.5, 2.1, 35),
+    np.linspace(1.5, 2.1, 15),
     np.linspace(2.15, 2.4, 30), # Fino cerca de T_c
     np.linspace(2.45, 10.2, 150)
 ))
@@ -290,7 +289,7 @@ if AI:
 
 
     X_train, X_test, y_train, y_test, T_train, T_test = train_test_split(
-        X, y, T, test_size=0.25, random_state=0, stratify=y 
+        X, y, T_rango, test_size=0.25, random_state=0, stratify=y 
     ) # Dividimos en train y test (partición 75/25). No utilizamos validación. Usamos stratify para
     # que estén repartidos de manera homogénea en el train y test
 

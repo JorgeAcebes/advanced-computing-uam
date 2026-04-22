@@ -334,6 +334,92 @@ def verlet_solver(acc_func, t_array, x0, v0, stop_idx=None):
     return x_sol, v_sol
 
 
+# ===============================
+#         POISSON SOR SOLVER
+# ===============================
+
+
+
+def solve_poisson_sor(V, rho, is_boundary, a, epsilon0=1.0, tol=1e-6, omega=1.9):
+    """
+    Solucionador matricial general para las ecuaciones de Laplace/Poisson.
+    Utiliza Gauss-Seidel con SOR vectorizado mediante ordenamiento Red-Black.
+    Aísla completamente la topología y fronteras del motor de cálculo.
+    """
+    delta = float('inf')
+    
+    # Generación de máscaras tipo tablero de ajedrez (Red-Black ordering)
+    x, y = np.indices(V.shape) # Obtenemos los índices x, y del tablero V
+    red = (x + y) % 2 == 0 # Si la suma es par, significa que o bien tenemos impar + impar o par + par ---> genera tablero de ajedrez
+    black = ~red # Será negro donde no sea negro
+
+    # Exclusión de los nodos de contorno (condiciones de Dirichlet)
+    active_red = red & ~is_boundary
+    active_black = black & ~is_boundary
+
+    while delta > tol: # La tolerancia que le damos a la variación del potencial máxima de un grid al anterior
+        V_old = np.copy(V) # La copiamos porque si ponemos V_old = V se modificará V_old si modificamos V (apunta a la misma dirección del puntero)
+
+
+        # Emplearemos roll para obtener el valor de los vecinos. Como hay 4 vecinos (omitiendo diagonales), multiplicamos por 0.25 para obtener el promedio
+        # Actualización iterativa de subred Roja: (1-w) * V + w V^obj
+        V[active_red] = (1 - omega) * V[active_red] + omega * 0.25 * (
+            np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0) +
+            np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1) + (a**2 * rho) / epsilon0
+        )[active_red]
+
+        # Actualización iterativa de subred Negra: (1-w) * V + w V^obj ---> Lo hacemos empleando la actualización previa de las rojas.
+        V[active_black] = (1 - omega) * V[active_black] + omega * 0.25 * (
+            np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0) +
+            np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1) + (a**2 * rho) / epsilon0
+        )[active_black]
+
+        # Condición de convergencia absoluta
+        delta = np.max(np.abs(V - V_old))
+
+    return V
+
+
+def solve_poisson_sor_anisotropic(V, rho, is_boundary, dx, dy, epsilon0=1.0, tol=1e-3, omega=1.9):
+    delta = float('inf')
+    
+    y_idx, x_idx = np.indices(V.shape)
+    red = (x_idx + y_idx) % 2 == 0
+    black = ~red
+
+    active_red = red & ~is_boundary
+    active_black = black & ~is_boundary
+
+    # Precomputamos constantes para eficiencia
+    dx2, dy2 = dx**2, dy**2
+    denom = 2.0 * (dx2 + dy2)
+    k_x = dy2 / denom
+    k_y = dx2 / denom
+    k_rho = (dx2 * dy2) / (epsilon0 * denom)
+
+    while delta > tol:
+        V_old = np.copy(V)
+
+        # Actualización Red
+        V_star_red = (
+            k_x * (np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1)) + 
+            k_y * (np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0)) + 
+            k_rho * rho
+        )
+        V[active_red] = (1 - omega) * V[active_red] + omega * V_star_red[active_red]
+
+        # Actualización Black
+        V_star_black = (
+            k_x * (np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1)) + 
+            k_y * (np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0)) + 
+            k_rho * rho
+        )
+        V[active_black] = (1 - omega) * V[active_black] + omega * V_star_black[active_black]
+
+        delta = np.max(np.abs(V - V_old))
+
+    return V
+
 # __________________________________________
 
 #           AUXILIARY FUNCTIONS

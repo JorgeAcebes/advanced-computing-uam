@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.ticker import MaxNLocator
 import scipy as sp
+from numba import njit
 # __________________________________________
 
 #                IVP SOLVERS
@@ -418,6 +419,44 @@ def solve_poisson_sor_anisotropic(V, rho, is_boundary, dx, dy, epsilon0=1.0, tol
 
         delta = np.max(np.abs(V - V_old))
 
+    return V
+
+
+@njit
+def gauss_seidel_cilindrico(Nr, Nz, r, dr, dz, Vi, Ve, Vb, Vt,  max_iter=20000, tol=1e-6, omega=1.9):
+    '''
+    Resolución de la ecuación de Poisson en coordenadas cilíndricas.
+    '''
+    V = np.zeros((Nr+1, Nz+1))
+    
+    # Imposición de condiciones de contorno
+    V[0, :] = Vi   # Cilindro interior
+    V[Nr, :] = Ve  # Cilindro exterior
+    V[:, 0] = Vb   # Tapa inferior (z=0)
+    V[:, Nz] = Vt  # Tapa superior (z=L)
+    
+    dr2, dz2 = dr**2, dz**2
+    C_bulk = 2 * (1/dr2 + 1/dz2)
+    
+    for it in range(max_iter):
+        max_diff = 0.0
+        # Iteración sobre los nodos internos
+        for i in range(1, Nr):
+            coef_plus = 1/dr2 + 1/(2 * r[i] * dr)
+            coef_minus = 1/dr2 - 1/(2 * r[i] * dr)
+            
+            for j in range(1, Nz):
+                v_old = V[i, j]
+                V_new = (coef_plus * V[i+1, j] + coef_minus * V[i-1, j] + 
+                         (V[i, j+1] + V[i, j-1]) / dz2) / C_bulk
+                
+                # Actualización con factor de relajación
+                V[i, j] = v_old + omega * (V_new - v_old)
+                max_diff = max(max_diff, abs(V[i, j] - v_old))
+                
+        if max_diff < tol:
+            break
+            
     return V
 
 # __________________________________________

@@ -352,7 +352,7 @@ def solve_poisson_sor(V, rho, is_boundary, a, epsilon0=1.0, tol=1e-6, omega=1.9)
     # Generación de máscaras tipo tablero de ajedrez (Red-Black ordering)
     x, y = np.indices(V.shape) # Obtenemos los índices x, y del tablero V
     red = (x + y) % 2 == 0 # Si la suma es par, significa que o bien tenemos impar + impar o par + par ---> genera tablero de ajedrez
-    black = ~red # Será negro donde no sea negro
+    black = ~red # Será negro donde no sea rojo
 
     # Exclusión de los nodos de contorno (condiciones de Dirichlet)
     active_red = red & ~is_boundary

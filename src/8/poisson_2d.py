@@ -8,15 +8,26 @@ sys.path.append(str(path_padre))
 
 from tools import solve_poisson_sor
 from tools import setup_style
-
 setup_style()
 
-def plot_potential(V, title, extent=None):
+# =====================================================
+# Ruta hacia la carpeta de data
+current_dir = Path(__file__).resolve().parent
+
+# Ruta de figuras
+figuras = Path(__file__).resolve().parent.parent / '8' / 'figures'
+figuras.mkdir(parents=True, exist_ok=True)  
+# =====================================================
+
+def plot_potential(V, title=None, extent=None, save_title=None):
     plt.imshow(V, cmap='coolwarm', origin='upper', extent=extent)
-    plt.colorbar(label='Potencial (V)')
-    plt.title(title)
-    plt.xlabel('x (cm)')
-    plt.ylabel('y (cm)')
+    plt.colorbar(label=r'Potencial Electrostático $V$ [V]')
+    if title:
+        plt.title(title)
+    plt.xlabel(r'$x$ [cm]')
+    plt.ylabel(r'$y$ [cm]')
+    if save_title:
+        plt.savefig(figuras/save_title)
     plt.show()
 
 # =====================================================================
@@ -43,7 +54,7 @@ def run_exercise_9_1():
 
 
     V = solve_poisson_sor(V, rho, is_boundary, a, epsilon0=1.0, tol=1e-6, omega=1.9)
-    plot_potential(V, "Ej 9.1: Ecuación de Poisson", extent)
+    plot_potential(V, extent=extent, save_title='poisson_9_1_standard.png')
 
 # =====================================================================
 # Definición Topológica: Ejercicio 9.2 (Laplace)

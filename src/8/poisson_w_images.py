@@ -9,20 +9,17 @@ path_padre = Path(__file__).resolve().parent.parent
 sys.path.append(str(path_padre))
 from tools import solve_poisson_sor
 from tools import setup_style
+from matplotlib.ticker import MaxNLocator
 
 setup_style()
 
-
-
 # :::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # decidir qué imágenes se emplean:
+uam = 0
 mapache = 0
 hamburgo = 0
 excercise_9_1 = 1
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-
 
 # =====================================================
 # Ruta hacia la carpeta de data
@@ -34,37 +31,31 @@ figuras = Path(__file__).resolve().parent.parent / '8' / 'figures'
 figuras.mkdir(parents=True, exist_ok=True)  
 # =====================================================
 
-
-
-def process_image(image_path, dx=0.1, tol = 1e-3, L = None):
+def process_image(image_path, dx=0.1, tol=1e-3, L=None, mode='dirichlet', rho_scale=1.0, kernel = 5):
     """
-    Lee una imagen PNG, detecta contornos topológicos y resuelve 
-    la ecuación de Laplace en el dominio bidimensional resultante.
+    mode : {'dirichlet', 'charge', 'both'}
+        'dirichlet': contornos como conductores a potencial fijo.
+        'charge'   : áreas encerradas inyectan densidad de carga rho; los bordes
+                      exteriores siguen siendo tierra (Dirichlet = 0).
+        'both'     : figuras abiertas: Dirichlet, figuras cerradas: densidad de carga.
 
-    L: longitud en x, y que queremos que tenga la imagen (va a ser siempre ratio 1:1)
+    rho_scale: Factor multiplicativo sobre rho en los modos 'charge' y 'both'.
     """
-    # 1. Carga y preprocesamiento de la imagen
     try:
         img_array = np.fromfile(image_path, np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
     except Exception as e:
         raise ValueError(f"Fallo en la lectura física del archivo: {e}")
-
     if img is None:
         raise ValueError(f"OpenCV no pudo decodificar la imagen: {image_path}")
-    else:
-        print('OpenCV ha podido decodificar la imagen')
+    print('OpenCV ha podido decodificar la imagen')
 
-    # Suavizado gaussiano para mitigar el ruido de alta frecuencia
-    blurred = cv2.GaussianBlur(img, (5, 5), 0)
-    
-    # 2. Detección de bordes mediante el algoritmo de Canny
+    blurred = cv2.GaussianBlur(img, (kernel, kernel), 1)
+
     print('Detectando bordes...')
-    edges = cv2.Canny(blurred, threshold1=50, threshold2=150)
+    edges = cv2.Canny(blurred, threshold1=10, threshold2=120)
     print('¡Bordes detectados!')
 
-    # 3. Extracción de la topología (Contornos)
-    # RETR_EXTERNAL ignora agujeros internos, quedándose con la envolvente principal
     print('Extrayendo la topología...')
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     print('Topología extraída!')
@@ -77,82 +68,98 @@ def process_image(image_path, dx=0.1, tol = 1e-3, L = None):
     else:
         a = dx
         extent = None
+
     V = np.zeros((N_y, N_x), dtype=np.float64)
+    rho = np.zeros((N_y, N_x), dtype=np.float64)
     is_boundary = np.zeros((N_y, N_x), dtype=bool)
-    
-    # Condición de contorno exterior (Tierra: 0V) para asegurar que el problema de Dirichlet 
-    # esté bien planteado y el método iterativo converja.
-    is_boundary[0, :] = is_boundary[-1, :] = is_boundary[:, 0] = is_boundary[:, -1] = True
-    
-    
-    # 4. Clasificación topológica y Mapeo de potencial por escala de grises
-    AREA_THRESHOLD = 50.0  
-    
-    # Máscara global para la visualización final
+
+    # Tierra en el borde exterior: problema de Dirichlet bien planteado
+    is_boundary[0, :] = is_boundary[-1, :] = True
+    is_boundary[:, 0] = is_boundary[:, -1] = True
+
+    AREA_THRESHOLD = 50.0
     mask = np.zeros_like(img)
-    
-    print('Definiendo el potencial según la topología y radiometría...')
+
+    print('Definiendo el potencial / densidad de carga según topología...')
     for cnt in contours:
-        area = cv2.contourArea(cnt)
-        
-        # Máscara local aislada para el contorno actual
+        area       = cv2.contourArea(cnt)
+        is_closed  = area > AREA_THRESHOLD
+
         cnt_mask = np.zeros((N_y, N_x), dtype=np.uint8)
-        
-        if area > AREA_THRESHOLD:
-            # Figura topológicamente cerrada
+        if is_closed:
             cv2.drawContours(cnt_mask, [cnt], -1, 255, thickness=cv2.FILLED)
         else:
-            # Figura abierta (conductor unidimensional)
             cv2.drawContours(cnt_mask, [cnt], -1, 255, thickness=1)
-            
-        # Extracción de la intensidad media de la figura en la imagen original
+
         mean_intensity = cv2.mean(img, mask=cnt_mask)[0]
-        
-        # Transformación lineal: I(0) -> V(+1) ; I(255) -> V(-1)
-        v_pot = 1.0 - (2.0 * mean_intensity / 255.0)
-        
-        # 5. Mapeo del dominio a las matrices del solucionador
-        is_conductor = cnt_mask > 0
-        is_boundary[is_conductor] = True
-        V[is_conductor] = v_pot  # Condición de Dirichlet específica para la figura
-        
-        # Integración en la máscara global para el ploteo
+        is_conductor   = cnt_mask > 0
+
+        use_dirichlet = (
+            mode == 'dirichlet'
+            or (mode == 'both' and not is_closed)
+        )
+        use_charge = (
+            mode == 'charge'
+            or (mode == 'both' and is_closed)
+        )
+
+        if use_dirichlet:
+            # I(0): V = +1 ;  I(255): V = −1
+            v_pot = 1.0 - (2.0 * mean_intensity / 255.0)
+            is_boundary[is_conductor] = True
+            V[is_conductor] = v_pot
+
+        elif use_charge:
+            # I(0): rho_scale ;  I(255): −rho_scale
+            rho_val = rho_scale * (1.0 - 2.0 * mean_intensity / 255.0)
+            rho[is_conductor] = rho_val
+            # No se toca is_boundary: la región es libre, no un conductor
+
         mask = cv2.bitwise_or(mask, cnt_mask)
-            
-    print('Potencial definido rigurosamente.')
-    
-    # Densidad de carga nula para el vacío restante
-    rho = np.zeros_like(V)
+
+    print('Condiciones definidas.')
 
     print('Resolviendo la ecuación de Poisson... (proceso lento)')
     V_solved = solve_poisson_sor(V, rho, is_boundary, a, omega=1.9, tol=tol)
-    print('Poisson resuelta!')
+    print('¡Poisson resuelta!')
 
     return V_solved, mask, extent
 
-def plot_potential(V, title, mask, save_fig = False, extent=None):
+
+def plot_potential(V, title, mask, save_fig_title = 'Título', extent=None, origin='upper', no_ticks=False):
     plt.imshow(V, cmap='coolwarm', origin='upper', extent=extent)
-    plt.colorbar(label='Potencial (V)')
-    plt.contour(mask, levels=[127], colors='white', linewidths=0.5, alpha=0.5,origin='upper', extent=extent)
+    plt.colorbar(label=r'Potencial Electrostático $V$ [V]')
+    plt.contour(mask, levels=[127], colors='white', linewidths=0.5, alpha=0.5,origin=origin, extent=extent)
     plt.title(title)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.savefig(figuras/f'{title}.png', bbox_inches='tight', dpi = 300) 
+    plt.xlabel('$x$')
+    plt.ylabel('$y$')
+    if no_ticks:
+        plt.xticks([])
+        plt.yticks([])
+    plt.savefig(figuras/f'{save_fig_title}.png', bbox_inches='tight', dpi = 300) 
     plt.show()
 
 
-if mapache:
-    mapache_dir = DATA_8_DIR / 'mapache.png'
-    V_mapache, mask_mapache = process_image(str(mapache_dir))
-    plot_potential(V_mapache, 'Mapache', mask_mapache)
+for tol_title in [0.1, 0.01, 0.001]:
+    tol = int(np.log10(tol_title))
 
-if hamburgo: 
-    ham_dir = DATA_8_DIR / 'hamburgo.png'
-    V_ham, mask_ham = process_image(str(ham_dir))
-    plot_potential(V_ham, 'Dos personas en Hamburgo', mask_ham)
+    if uam:
+        uam_dir = DATA_8_DIR / 'uam.png'
+        V_uam, mask_uam, _ = process_image(str(uam_dir), mode='both', kernel=5, tol=tol_title)
+        plot_potential(V_uam, rf'Logo UAM Ciencias [Tolerancia: $10^{ {tol} }$]', mask_uam, save_fig_title=f'uam_{tol_title}', origin='lower', no_ticks=True)
+
+    if mapache:
+        mapache_dir = DATA_8_DIR / 'mapache.png'
+        V_mapache, mask_mapache, _ = process_image(str(mapache_dir), mode='dirichlet', tol=tol_title)
+        plot_potential(V_mapache, rf'Mapache [Tolerancia: $10^{ {tol} }$]', mask_mapache, save_fig_title=f'Mapache_{tol_title}', origin='lower', no_ticks=True)
+
+    if hamburgo: 
+        ham_dir = DATA_8_DIR / 'hamburgo.png'
+        V_ham, mask_ham, _ = process_image(str(ham_dir), mode='dirichlet', tol=tol_title)
+        plot_potential(V_ham, rf'Andrés y yo en Hamburgo [Tolerancia: $10^{ {tol} }$]', mask_ham, save_fig_title=f'Hamburgo_{tol_title}', origin='lower', no_ticks=True)
 
 
 if excercise_9_1:
     dir = DATA_8_DIR / '9_1.png'
-    V, mask, extent = process_image(str(dir), tol=1e-6, L=100)
-    plot_potential(V, 'Resolución ejercicio 9.1', mask, save_fig=1, extent=extent)
+    V, mask, extent = process_image(str(dir), tol=1e-6, L=100, mode='charge')
+    plot_potential(V/10000, '', mask, save_fig_title='poisson_9_1_image', extent=extent) # Divido entre 10.000 para que case con la densidad del potencial del ejercicio 9.1

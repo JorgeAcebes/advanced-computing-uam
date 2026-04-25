@@ -15,9 +15,9 @@ setup_style()
 
 # :::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # decidir qué imágenes se emplean:
-uam = 0
-mapache = 0
-hamburgo = 0
+uam = 1
+mapache = 1
+hamburgo = 1
 excercise_9_1 = 1
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -35,25 +35,26 @@ def process_image(image_path, dx=0.1, tol=1e-3, L=None, mode='dirichlet', rho_sc
     """
     mode : {'dirichlet', 'charge', 'both'}
         'dirichlet': contornos como conductores a potencial fijo.
-        'charge'   : áreas encerradas inyectan densidad de carga rho; los bordes
-                      exteriores siguen siendo tierra (Dirichlet = 0).
+        'charge'   : áreas encerradas inyectan densidad de carga rho; los bordes exteriores siguen siendo tierra (Dirichlet = 0).
         'both'     : figuras abiertas: Dirichlet, figuras cerradas: densidad de carga.
 
     rho_scale: Factor multiplicativo sobre rho en los modos 'charge' y 'both'.
     """
+
     try:
-        img_array = np.fromfile(image_path, np.uint8)
-        img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE)
+        img_array = np.fromfile(image_path, np.uint8) # Obtenemos array 1D que representa los bytes de la imagen
+        img = cv2.imdecode(img_array, cv2.IMREAD_GRAYSCALE) # Leemos la imagen en escala blanco-negro
     except Exception as e:
         raise ValueError(f"Fallo en la lectura física del archivo: {e}")
+    
     if img is None:
         raise ValueError(f"OpenCV no pudo decodificar la imagen: {image_path}")
     print('OpenCV ha podido decodificar la imagen')
 
-    blurred = cv2.GaussianBlur(img, (kernel, kernel), 1)
+    blurred = cv2.GaussianBlur(img, (kernel, kernel), 1) # Aplicamos un filtro Gaussiano para suavizar bordes
 
     print('Detectando bordes...')
-    edges = cv2.Canny(blurred, threshold1=10, threshold2=120)
+    edges = cv2.Canny(blurred, threshold1=10, threshold2=120) # Detectamos bordes
     print('¡Bordes detectados!')
 
     print('Extrayendo la topología...')
@@ -61,7 +62,7 @@ def process_image(image_path, dx=0.1, tol=1e-3, L=None, mode='dirichlet', rho_sc
     print('Topología extraída!')
 
     N_y, N_x = img.shape
-    if L:
+    if L: # Refactorizamos el diferencial a y la extensión de la imagen para que la imagen cuadre con las dimensiones
         L = np.abs(L)
         a = L / (N_x - 1)
         extent = [0, L, 0, L]
@@ -69,11 +70,11 @@ def process_image(image_path, dx=0.1, tol=1e-3, L=None, mode='dirichlet', rho_sc
         a = dx
         extent = None
 
-    V = np.zeros((N_y, N_x), dtype=np.float64)
+    V = np.zeros((N_y, N_x), dtype=np.float64) 
     rho = np.zeros((N_y, N_x), dtype=np.float64)
     is_boundary = np.zeros((N_y, N_x), dtype=bool)
 
-    # Tierra en el borde exterior: problema de Dirichlet bien planteado
+    # Tierra en el borde exterior (problema de Dirichlet bien planteado)
     is_boundary[0, :] = is_boundary[-1, :] = True
     is_boundary[:, 0] = is_boundary[:, -1] = True
 
@@ -82,8 +83,8 @@ def process_image(image_path, dx=0.1, tol=1e-3, L=None, mode='dirichlet', rho_sc
 
     print('Definiendo el potencial / densidad de carga según topología...')
     for cnt in contours:
-        area       = cv2.contourArea(cnt)
-        is_closed  = area > AREA_THRESHOLD
+        area = cv2.contourArea(cnt) # Obtenemos el área en píxeles que delimitan los contours
+        is_closed = area > AREA_THRESHOLD
 
         cnt_mask = np.zeros((N_y, N_x), dtype=np.uint8)
         if is_closed:
@@ -146,17 +147,17 @@ for tol_title in [0.1, 0.01, 0.001]:
     if uam:
         uam_dir = DATA_8_DIR / 'uam.png'
         V_uam, mask_uam, _ = process_image(str(uam_dir), mode='both', kernel=5, tol=tol_title)
-        plot_potential(V_uam, rf'Logo UAM Ciencias [Tolerancia: $10^{ {tol} }$]', mask_uam, save_fig_title=f'uam_{tol_title}', origin='lower', no_ticks=True)
+        plot_potential(V_uam, '', mask_uam, save_fig_title=f'uam_{tol_title}', origin='lower', no_ticks=True)
 
     if mapache:
         mapache_dir = DATA_8_DIR / 'mapache.png'
         V_mapache, mask_mapache, _ = process_image(str(mapache_dir), mode='dirichlet', tol=tol_title)
-        plot_potential(V_mapache, rf'Mapache [Tolerancia: $10^{ {tol} }$]', mask_mapache, save_fig_title=f'Mapache_{tol_title}', origin='lower', no_ticks=True)
+        plot_potential(V_mapache, '', mask_mapache, save_fig_title=f'Mapache_{tol_title}', origin='lower', no_ticks=True)
 
     if hamburgo: 
         ham_dir = DATA_8_DIR / 'hamburgo.png'
         V_ham, mask_ham, _ = process_image(str(ham_dir), mode='dirichlet', tol=tol_title)
-        plot_potential(V_ham, rf'Andrés y yo en Hamburgo [Tolerancia: $10^{ {tol} }$]', mask_ham, save_fig_title=f'Hamburgo_{tol_title}', origin='lower', no_ticks=True)
+        plot_potential(V_ham, '', mask_ham, save_fig_title=f'Hamburgo_{tol_title}', origin='lower', no_ticks=True)
 
 
 if excercise_9_1:

@@ -1,0 +1,109 @@
+% sections/3_code_and_methdos.tex
+\section{Marco Computacional}
+
+El análisis de simetría cilíndrica se implementa en \texttt{poisson\_3d.py}. Se emplea el método de Gauss-Seidel con sobrerrelajación sucesiva (SOR), acelerado con Numba (\texttt{@njit}) para resolver la ecuación de Laplace en una rejilla 2D ($r, z$). Las condiciones de Dirichlet fijan potenciales en los límites del dominio (cilindro interior y exterior, y tapas longitudinales). El código calcula iterativamente el potencial hasta que la diferencia relativa máxima cae por debajo de un umbral. En particular, la función que implementa el algoritmo es la siguiente:
+
+\begin{lstlisting}[language=Python, caption=Método Gauss-Seidel con SOR en coordenadas cilíndricas.] 
+@njit
+def gauss_seidel_cilindrico(Nr, Nz, r, dr, dz, Vi, Ve, Vb, Vt,  max_iter=20000, tol=1e-6, omega=1.9):
+    V = np.zeros((Nr+1, Nz+1))
+    
+    # Imposicion de condiciones de contorno
+    V[0, :] = Vi   # Cilindro interior
+    V[Nr, :] = Ve  # Cilindro exterior
+    V[:, 0] = Vb   # Tapa inferior (z=0)
+    V[:, Nz] = Vt  # Tapa superior (z=L)
+    
+    dr2, dz2 = dr**2, dz**2
+    C_bulk = 2 * (1/dr2 + 1/dz2)
+    
+    for it in range(max_iter):
+        max_diff = 0.0
+        
+        # Iteracion sobre los nodos internos
+        for i in range(1, Nr):
+            coef_plus = 1/dr2 + 1/(2 * r[i] * dr)
+            coef_minus = 1/dr2 - 1/(2 * r[i] * dr)
+            
+            for j in range(1, Nz):
+                v_old = V[i, j]
+                V_new = (coef_plus * V[i+1, j] + coef_minus * V[i-1, j] + 
+                         (V[i, j+1] + V[i, j-1]) / dz2) / C_bulk
+                
+                # Actualizacion con factor de relajacion
+                V[i, j] = v_old + omega * (V_new - v_old)
+                max_diff = max(max_diff, abs(V[i, j] - v_old))
+                
+        if max_diff < tol:
+            break
+            
+    return V
+\end{lstlisting}
+
+
+En sistemas cartesianos, el algoritmo implementado introduce una mejora computacional. Para evitar iteraciones anidadas mediante bucles explícitos, se emplea un esquema de sobrerrelajación sucesiva paralelizable vectorialmente. Se genera una máscara tipo tablero de ajedrez (\textit{Red-Black ordering}) que separa los nodos en dos grupos independientes. Así, los nodos ``rojos'' se actualizan instantáneamente en una sola operación matricial empleando funciones como \texttt{np.roll}, leyendo únicamente de los nodos ``negros'', y viceversa. Este paradigma matricial, además de estar encapsulado con un factor de sobrerelajación óptimo $\omega = 1.9$, reduce drásticamente los tiempos computacionales respecto a esquemas tradicionales.
+
+
+\begin{lstlisting}[language=Python, caption=Método Gauss-Seidel con SOR vectorizado mediante ordenamiento Red-Black]
+def solve_poisson_sor(V, rho, is_boundary, a, epsilon0=1.0, tol=1e-6, omega=1.9):
+    delta = float('inf')
+    
+    # Generacion de mascaras tipo tablero de ajedrez (Red-Black ordering)
+    x, y = np.indices(V.shape) 
+    red = (x + y) % 2 == 0
+    black = ~red 
+
+    # Exclusion de los nodos de contorno (condiciones de Dirichlet)
+    active_red = red & ~is_boundary
+    active_black = black & ~is_boundary
+
+    while delta > tol: 
+        V_old = np.copy(V)
+        
+        # Actualizacion iterativa de subred Roja:
+        V[active_red] = (1 - omega) * V[active_red] + omega * 0.25 * (
+            np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0) +
+            np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1) +
+            (a**2 * rho) / epsilon0 
+            )[active_red]
+
+        # Actualizacion iterativa de subred Negra: 
+        V[active_black] = (1 - omega) * V[active_black] + omega * 0.25 * (
+            np.roll(V, 1, axis=0) + np.roll(V, -1, axis=0) +
+            np.roll(V, 1, axis=1) + np.roll(V, -1, axis=1) +
+            (a**2 * rho) / epsilon0
+        )[active_black]
+
+        # Condicion de convergencia absoluta
+        delta = np.max(np.abs(V - V_old))
+
+    return V
+\end{lstlisting}
+
+
+
+La aportación algorítmica más innovadora del presente desarrollo se ubica en el procesador fotográfico topológico. Este procesador vincula bibliotecas de análisis numérico (NumPy) con visión artificial pura (OpenCV). El flujo de procesamiento se desgrana en las siguientes etapas consecutivas:
+\begin{enumerate}
+    \item La lectura del canal de escala de grises de la imagen física.
+    \item  El suavizado de altas frecuencias mediante convolución gaussiana (\texttt{cv2.GaussianBlur}) para atenuar ruido.
+    \item La detección geométrica de altas variaciones de gradiente lumínico mediante el algoritmo Canny (\texttt{cv2.Canny}).
+    \item El trazado estructural polígonal empleando funciones topológicas (\texttt{cv2.findContours}).
+\end{enumerate}
+
+Dependiendo de si el algoritmo detecta un área completamente encerrada (superior a un umbral \texttt{AREA\_THRESHOLD}) o un filamento abierto, el sistema toma una decisión fenomenológica:
+Si opera en modo \texttt{Dirichlet}, impone las geometrías como bordes metálicos conductores fijados a un potencial específico, calculado a partir de la intensidad lumínica media del píxel.
+Si opera en modo \texttt{Charge}, inyecta densidad de carga $\rho$ en el área interior de las topologías cerradas.
+
+\begin{lstlisting}[language=Python, caption=Asignación dinámica de condiciones físicas según la topología extraída por OpenCV.]
+if use_dirichlet:
+    # Mapeo de intensidad luminica a potencial Dirichlet
+    v_pot = 1.0 - (2.0 * mean_intensity / 255.0)
+    is_boundary[is_conductor] = True
+    V[is_conductor] = v_pot
+elif use_charge:
+    # Mapeo de intensidad luminica a densidad de carga
+    rho_val = rho_scale * (1.0 - 2.0 * mean_intensity / 255.0)
+    rho[is_conductor] = rho_val
+\end{lstlisting}
+
+Una vez las matrices topológicas $V$, $\rho$ e $is\_boundary$ quedan definidas automáticamente a partir de los píxeles de la imagen fotográfica, se inyectan en el solver vectorial \textit{Red-Black} SOR para la relajación final del campo electrostático.

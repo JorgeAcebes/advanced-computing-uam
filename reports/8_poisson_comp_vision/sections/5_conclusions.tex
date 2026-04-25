@@ -1,0 +1,11 @@
+% sections/5_conclusions.tex
+\section{Conclusiones}
+
+El presente informe ha demostrado con éxito la resolución numérica de la ecuación de Poisson empleando diversos enfoques computacionales acelerados.
+
+En primer lugar, el análisis del sistema cilíndrico ha validado el algoritmo de Gauss-Seidel en coordenadas cilíndricas ($r, z$), reproduciendo el decaimiento logarítmico del potencial radial predicho teóricamente para la sección media longitudinal. Pequeñas desviaciones analíticas son atribuibles a efectos de borde en la geometría finita.
+
+En segundo lugar, se ha presentado un avanzado sistema de trabajo automatizado que procesa imágenes geométricas arbitrarias mediante visión artificial con OpenCV (\texttt{cv2}). Se ha comprobado que la detección de bordes y la identificación de contornos permiten mapear eficazmente geometrías no euclídeas a condiciones de contorno físicas válidas para la ecuación de Poisson, ya sean líneas de potencial o densidades de carga. El estudio de la tolerancia iterativa ha revelado la importancia de alcanzar grados de convergencia profundos (tolerancia $\leq 10^{-3}$) para obtener isolíneas de potencial suaves y estables.
+
+Finalmente, el contraste con el ejercicio académico 9.1 ha corroborado que el método basado en visión artificial puede reproducir de forma trivial y exacta los resultados obtenidos mediante el enfoque estándar cuando se interpreta un dibujo conceptual sombreado como densidades de carga proporcionales. Este hecho ratifica la utilidad y flexibilidad del sistema de visión artificial desarrollado para resolver problemas de electrostática en presencia de distribuciones de carga complejas definidas geométricamente.
+

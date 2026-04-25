@@ -1,0 +1,134 @@
+% sections/4_results_and_discussion.tex
+\section{Resultados y Discusión}
+
+El análisis del sistema cilíndrico proporciona un perfil de potencial numérico. La solución para el perfil radial en la sección media longitudinal se contrastó con la predicción analítica de decaimiento logarítmico según la Expresión \ref{eq:potencial_analitico_cilindro}. Los resultados numéricos mostrados en la Figura \ref{fig:pot_radial_z_cte} validan la precisión del método de Gauss-Seidel cilíndrico implementado, reproduciendo fielmente la relación logarítmica esperada.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/pot_radial_z_cte.png}
+    \caption{Perfil radial del potencial eléctrico para $z$ constante. La curva numérica sigue el decaimiento logarítmico ($\ln r$) teóricamente predicho, validando el algoritmo implementado.}
+    \label{fig:pot_radial_z_cte}
+\end{figure}
+
+Adicionalmente, se obtuvieron mapas de potencial 2D y visualizaciones 3D para la sección cilíndrica, proporcionando una visión detallada de la distribución del campo escalar en el dominio $(r, z)$. Estas visualizaciones se presentan en las Figuras \ref{fig:pot_elec_2d} y \ref{fig:pot_elec_3d}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/pot_elec_2d.png}
+    \caption{Mapa de potencial eléctrico 2D en el plano $(r, z)$ del cilindro.}
+    \label{fig:pot_elec_2d}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/pot_elec_3d.png}
+    \caption{Visualización 3D del potencial eléctrico en el plano $(r, z)$. Se aprecia el decaimiento desde el cilindro interior a potencial alto hasta el exterior a cero.}
+    \label{fig:pot_elec_3d}
+\end{figure}
+
+El aspecto más disruptivo de la batería experimental es, sin embargo, el estudio topológico mediado por visión artificial. Las siguientes figuras agrupan distintos paneles donde se muestra la imagen original y, acompañando, la solución a la ecuación de Poisson relajada con tres umbrales de tolerancia algorítmica ($10^{-1}, 10^{-2}, 10^{-3}$). 
+
+La Figura \ref{fig:grid_uam} muestra una el logo de la facultad de ciencias de la UAM y los tres resultados de potencial empleando el método \texttt{Dirichlet} junto con el método \texttt{Charge}. Se observa cómo una menor tolerancia suaviza las isolíneas de potencial, indicando una mejor convergencia de la solución.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{figures/uam.png}
+        \caption{Original (Logo Facultad Ciencias UAM)}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/uam_0.1.png}
+        \caption{Tolerancia: $10^{-1}$}
+    \end{subfigure}
+    \vskip\baselineskip
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/uam_0.01.png}
+        \caption{Tolerancia: $10^{-2}$}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/uam_0.001.png}
+        \caption{Tolerancia: $10^{-3}$}
+    \end{subfigure}
+    \caption{Impacto de la tolerancia iterativa en la relajación numérica de Poisson para el logotipo de la UAM. Una menor tolerancia produce isolíneas más suaves.}
+    \label{fig:grid_uam}
+\end{figure}
+
+Un análisis similar se realizó con la fotografía tomada en un viaje a Hamburgo, presentado en la Figura \ref{fig:grid_hamburgo}. La imagen original presenta límites mucho menos evidentes y, pese a ello, logran ser identificados. No obstante estos no logran encerrar áreas significativas, por lo que se emplea el método \texttt{Dirichlet}. De la misma manera que con el logo de la facultad de ciencias de la UAM, con una menor tolerancia conseguimos un suavizado mayor, como era de esperar, si bien es cierto que el resultado no es tan evidente como en el caso previo.
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=0.75\textwidth]{figures/hamburgo.png}
+        \caption{Original (Foto de Andrés y yo en Hamburgo)}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/Hamburgo_0.1.png}
+        \caption{Tolerancia: $10^{-1}$}
+    \end{subfigure}
+    \vskip\baselineskip
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/Hamburgo_0.01.png}
+        \caption{Tolerancia: $10^{-2}$}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/Hamburgo_0.001.png}
+        \caption{Tolerancia: $10^{-3}$}
+    \end{subfigure}
+    \caption{Resultados de relajación de Poisson para una foto de Andrés y yo en Hamburgo para diferentes tolerancias. Las tolerancias menores mejoran la continuidad de las líneas de potencial.}
+    \label{fig:grid_hamburgo}
+\end{figure}
+
+Finalmente, se aborda el ejercicio 9.1. del libro \citet{newman2012computational}, cuyo enunciado se encuentra en la Figura \ref{fig:9_1_enunciado}.  El enfoque estándar exige definir explícitamente las densidades de carga con cargas opuestas en los respectivos cuadrados. El resultado de potencial numérico obtenido se presenta en la Figura \ref{fig:poisson_9_1_standard}. Se aprecian las dos ``colinas'' y ``valles'' de potencial esperados para dos cargas opuestas delimitadas por la frontera. 
+
+
+
+
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{figures/9_1_enunciado.png}
+    \caption{Topología de densidades de carga para el ejercicio 9.1.}
+    \label{fig:9_1_enunciado}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering    \includegraphics[width=0.7\textwidth]{figures/poisson_9_1_standard.png}
+    \caption{Mapa de potencial eléctrico 2D para el ejercicio 9.1 resuelto por el método estándar.}
+    \label{fig:poisson_9_1_standard}
+\end{figure}
+
+
+El método basado en visión artificial es capaz de reproducir este mismo escenario físico de forma trivial a partir de un dibujo conceptual. Se suministró el dibujo mostrado en la Figura \ref{fig:9_1} como imagen de entrada. El algoritmo de OpenCV identificó las regiones sombreadas y, basándose en la intensidad de píxeles, asignó densidades de carga positivas y negativas proporcionales. El resultado obtenido tras la relajación de Poisson con una tolerancia de $10^{-6}$ se muestra en la Figura \ref{fig:poisson_9_1_image}.
+
+Una comparación visual revela que el mapa de potencial es topológicamente idéntico al obtenido por el método estándar, validando la capacidad del sistema de visión artificial para interpretar correctamente dibujos conceptuales como distribuciones físicas de carga para resolver la ecuación de Poisson. 
+
+El único problema presentado por el método de visión artificial es, obviando la creación de la imagen de entrada, el excesivo tiempo de cómputo. En comparación con el tiempo de ejecución del método estándar, del orden de segundos, el método por visión artificial se encontraba en el orden de minutos. El procesado y delimitación de bordes de la imagen no contribuyen significativamente a esta tardanza, sino que es causada por los contornos pixelados y rugosos de alta complejidad. Esto alarga el método de la relajación numérica al requerir un número significativamente mayor de iteraciones para que el potencial se estabilice. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{figures/9_1.png}
+    \caption{Imagen conceptual de entrada (dibujo) para el ejercicio 9.1.}
+    \label{fig:9_1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/poisson_9_1_image.png}
+    \caption{Mapa de potencial eléctrico 2D para el ejercicio 9.1 resuelto mediante el método de visión artificial.}
+    \label{fig:poisson_9_1_image}
+\end{figure}

@@ -1,0 +1,38 @@
+% sections/2_theory.tex
+\section{Marco Teórico}
+
+El comportamiento del campo eléctrico en régimen estático queda gobernado por las ecuaciones de Maxwell. Partiendo de la ley de Gauss en forma diferencial y de la definición del campo eléctrico como el gradiente negativo de un potencial escalar ($E = -\nabla V$), se obtiene la ecuación de Poisson, que relaciona la segunda derivada espacial del potencial con la densidad volumétrica de carga $\rho$:
+\begin{equation}
+    \nabla^2 V = -\frac{\rho}{\varepsilon_0}
+    \label{eq:poisson_general}
+\end{equation}
+
+En ausencia de carga ($\rho = 0$), esta expresión se reduce a la ecuación de Laplace. La complejidad resolutiva del operador laplaciano ($\nabla^2$) depende intrínsecamente del sistema de coordenadas adoptado. 
+
+Para el caso de un condensador cilíndrico finito, es conveniente operar en coordenadas cilíndricas $(r, \theta, z)$. Dado que el sistema presenta simetría acimutal (el potencial no varía respecto al ángulo $\theta$), las derivadas parciales respecto a dicha coordenada se anulan, reduciendo el problema tridimensional a un dominio bidimensional en el plano $(r, z)$:
+\begin{equation}
+    \frac{1}{r}\frac{\partial}{\partial r}\left(r \frac{\partial V}{\partial r}\right) + \frac{\partial^2 V}{\partial z^2} = -\frac{\rho}{\varepsilon_0}
+    \label{eq:poisson_cilindrica}
+\end{equation}
+
+Para evaluar analíticamente este sistema en regiones alejadas de los bordes del cilindro ($L \to \infty$), se desprecian los efectos de borde, obteniendo la clásica distribución logarítmica del potencial radial:
+\begin{equation}
+    V(r) = V_i \frac{\ln(R_e / r)}{\ln(R_e / R_i)}
+    \label{eq:potencial_analitico_cilindro}
+\end{equation}
+
+donde $R_i$ y $R_e$ corresponden a los radios interior y exterior, y $V_i$ es el potencial aplicado en el electrodo interno.
+
+Por otro lado, para dominios cartesianos bidimensionales, como los que se analizarán mediante el procesado de imágenes, el operador de Laplace adopta su forma más elemental:
+\begin{equation}
+    \frac{\partial^2 V}{\partial x^2} + \frac{\partial^2 V}{\partial y^2} = -\frac{\rho}{\varepsilon_0}
+    \label{eq:poisson_cartesiana}
+\end{equation}
+
+Para poder calcular numéricamente estas ecuaciones en un ordenador, el dominio continuo se discretiza en una malla de puntos espaciados por un diferencial constante $a$. Aplicando el desarrollo en serie de Taylor de segundo orden (diferencias finitas centradas), la aproximación numérica del laplaciano bidimensional en coordenadas cartesianas evalúa el potencial en un nodo central $(i,j)$ en función de sus cuatro vecinos más próximos:
+\begin{equation}
+    V_{i,j} = \frac{1}{4} \left( V_{i+1,j} + V_{i-1,j} + V_{i,j+1} + V_{i,j-1} + \frac{a^2 \rho_{i,j}}{\varepsilon_0} \right)
+    \label{eq:discretizacion_cartesiana}
+\end{equation}
+
+El método numérico de Gauss-Seidel itera sobre esta relación para actualizar cada nodo geométrico utilizando los valores más recientes calculados en la misma iteración. Las condiciones de contorno tipo Dirichlet imponen que los valores de $V$ en ciertas regiones fijadas permanezcan inalterables a lo largo del proceso iterativo.

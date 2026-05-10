@@ -7,12 +7,21 @@ from scipy.fft import fft2, ifft2, fftfreq
 import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 
+
+base_size = 14
 # 2. Tipografía LaTeX (LM Roman)
 plt.rcParams.update({
     "text.usetex": True,
     "font.family": "serif",
     "font.serif": ["Computer Modern Roman"],
-    "axes.formatter.use_mathtext": True
+    "axes.formatter.use_mathtext": True,
+    "figure.dpi": 300,
+    "xtick.labelsize": base_size,
+    "ytick.labelsize": base_size,
+    "axes.labelsize": base_size + 1,
+    "axes.titlesize": base_size + 2,
+    "legend.fontsize": base_size - 1,
+    "figure.titlesize": base_size + 4
 })
 
 # Parámetros físicos (unidades atómicas \hbar = m = e = 1)
@@ -106,5 +115,4 @@ duracion_segundos = 10
 total_frames = fps * duracion_segundos
 
 ani = FuncAnimation(fig, update, frames=total_frames, blit=True)
-
-ani.save('figures/doble_rendija.mp4', writer='ffmpeg', fps=fps, dpi=150)
+ani.save('figures/doble_rendija.mp4', writer='ffmpeg', fps=fps)

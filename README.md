@@ -39,12 +39,8 @@ The code is organized into thematic modules following the physical phenomena stu
 - **Finite Differences**: Solving the Laplace ($\nabla^2 \phi = 0$) and Poisson equations using Gauss-Seidel and Successive Over-Relaxation (SOR) methods.
 - **Computer Vision**: Artificial detection of contours and edges of images for the automatic extraction of geometrical features that can be interpreted as physical boundary conditions or charge distributions, enabling the numerical solution of the Poisson equation on arbitrary domains derived directly from visual input. 
 
-### 9. Diffusion & Parabolic PDEs (Initial Value Problems)
+### 9. Parabolic & Hyperbolic PDEs (Initial Value Problems)
 - **Heat Transfer**: Modeling the diffusion equation through finite difference schemes in both time and space.
-- **Numerical Schemes**: Implementation and stability analysis of explicit (Forward Time Centered Space) and implicit (Backward Time Centered Space) methods.
-
-### 10. Waves & Hyperbolic PDEs (Initial Value Problems)
-- **Wave Equation**: Simulation of wave propagation in ideal media and analysis of the resulting frequency spectrum.
 - **Advanced Solvers**: Implementation of the Crank-Nicolson algorithm and spectral methods for high-precision dynamic modeling.
 
 ## Reports & Documentation

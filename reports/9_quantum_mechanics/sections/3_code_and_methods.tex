@@ -1,0 +1,54 @@
+% --- Archivo: sections/3_code_and_methdos.tex ---
+\section{Marco Computacional}
+
+Para el sistema 1D, el espacio se discretiza en $N$ puntos y el operador laplaciano se aproxima por diferencias finitas centrales. Para preservar la unitaridad ($|\psi |^2=1$), se emplea el esquema implícito de Crank-Nicolson, basado en la aproximación de Cayley:
+\begin{equation}
+    \left( \mathbb{I} + \frac{i \Delta t}{2} \mathbb{H} \right) \psi^{n+1} = \left( \mathbb{I} - \frac{i \Delta t}{2} \mathbb{H} \right) \psi^n
+\end{equation}
+
+La resolución algebraica requiere resolver el sistema disperso tridiagonal $\mathbb{A} \psi^{n+1} = \mathbb{B} \psi^n$. El código original se optimiza aplicando una pre-descomposición LU mediante \texttt{scipy.sparse.linalg.splu}. Esta decisión reduce la complejidad espacial y temporal de $\mathcal{O}(N^2)$ a $\mathcal{O}(N)$ por iteración, posibilitando la simulación en tiempo real y el uso de la cuadratura trapezoidal para $T(t)$ y $R(t)$.
+
+\begin{lstlisting}[caption={Integración temporal 1D optimizada con matrices dispersas y descomposición LU.}, label={lst:cn_solver}]
+diag_prin = 1.0 / (dx**2) + V
+diag_sec = -0.5 / (dx**2) * np.ones(N - 1)
+H = diags([diag_sec, diag_prin, diag_sec], [-1, 0, 1])
+
+A = eye(N) + 0.5j * dt * H
+B = eye(N) - 0.5j * dt * H
+solve_A = splu(csc_matrix(A)).solve # Factorizacion unica O(N)
+\end{lstlisting}
+
+% Para la resolución temporal del sistema 1D con barrera se emplea el esquema de Crank-Nicolson en su versión matricial tridiagonal, resuelta con \texttt{scipy.linalg.solve\_banded}. Definiendo $\alpha = i\Delta t/(4\Delta x^2)$, los elementos de las matrices $A$ y $B$ son:
+
+% \begin{align}
+%     A_{ii} &= 1 + 2\alpha + \tfrac{i\Delta t}{2} V_i, \qquad A_{i,i\pm 1} = -\alpha \\
+%     B_{ii} &= 1 - 2\alpha - \tfrac{i\Delta t}{2} V_i, \qquad B_{i,i\pm 1} = +\alpha
+% \end{align}
+
+% La descomposición bandeada de $A$ se precalcula fuera del bucle y se reutiliza en cada paso temporal, reduciendo nuevamente el coste a $\mathcal{O}(N)$ por iteración. Tras cada paso se renormaliza $\psi$ para corregir la deriva numérica acumulada.
+
+% \begin{lstlisting}[caption={Paso temporal con matrices bandeadas y renormalización.}]
+% for n in range(Nt):
+%     b = apply_B(psi)           # Producto B * psi^n
+%     psi = solve_banded((1,1), ab, b)   # Resolucion O(N)
+%     psi[0] = psi[-1] = 0       # Condiciones de contorno
+%     psi /= np.sqrt(np.trapezoid(np.abs(psi)**2, x))
+% \end{lstlisting}
+
+Para los sistemas 2D densos ($512 \times 512$), la resolución matricial se vuelve prohibitiva. Se implementa en su lugar el Método Espectral de Paso Fraccionado (Split-Step Fourier Method, SSFM), aprovechando la fórmula de Trotter-Suzuki:
+\begin{equation}
+    \exp(-i \hat{H} \Delta t) \approx \exp\left(-i \frac{\hat{V} \Delta t}{2}\right) \exp(-i \hat{K} \Delta t) \exp\left(-i \frac{\hat{V} \Delta t}{2}\right)
+\end{equation}
+
+Este método aplica el operador potencial (diagonal en posiciones) mediante multiplicación escalar, e intercala Transformadas Rápidas de Fourier (FFT2) para aplicar el operador cinético (diagonal en el espacio de momentos), alcanzando una eficiencia de $\mathcal{O}(N \log N)$. 
+
+\begin{lstlisting}[caption={Núcleo iterativo del método espectral SSFM para el dominio 2D.}, label={lst:ssfm}]
+def step(psi_in):
+    psi_out = UR * psi_in           # Mitad del paso potencial
+    psi_k = fft2(psi_out)           # Espacio de momentos (k)
+    psi_k = UK * psi_k              # Propagacion cinetica libre
+    psi_out = ifft2(psi_k)          # Retorno a espacio real (x,y)
+    return UR * psi_out             # Cierre del paso potencial
+\end{lstlisting}
+
+Adicionalmente, se implementan potenciales imaginarios absorbentes en los límites del dominio 2D para suprimir reflexiones periódicas (aliasing de la FFT) y mapeo de color HSV para representar simultáneamente la fase geométrica y la amplitud. Para la macromolécula, se evita el cálculo espacial estricto resolviendo la convolución teórica y usando muestreo Monte Carlo para simular impactos individuales discretos en la pantalla.

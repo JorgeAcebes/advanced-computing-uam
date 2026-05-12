@@ -1,0 +1,35 @@
+% --- Archivo: sections/2_theory.tex ---
+\section{Marco Teórico}
+
+La evolución determinista del estado cuántico está dictada por la ecuación de Schrödinger dependiente del tiempo. Asumiendo un sistema de unidades naturales ($\hbar = 1$, $m = 1$), en el caso unidimensional la ecuación toma la forma:
+\begin{equation}
+    i \frac{\partial \psi(x,t)}{\partial t} = \left[ -\frac{1}{2} \frac{\partial^2}{\partial x^2} + V(x) \right] \psi(x,t)
+\end{equation}
+
+El potencial $V(x)$ se define como una barrera rectangular de altura $V_0$ y anchura $w$, centrada en $x_c$. El estado inicial se modela como un paquete de ondas gaussiano localizado en $x_0$, con dispersión $\sigma$ y momento $k_0$:
+\begin{equation}
+    \psi(x,0) = A \exp\left\{-\frac{(x - x_0)^2}{2\sigma^2}\right\} \exp(i k_0 x)
+\end{equation}
+
+Para comprender el efecto túnel, cabe destacar que si la energía $E$ es inferior a $V_0$, el momento lineal en el interior de la barrera se vuelve imaginario. Esto transforma las ondas oscilatorias en ondas evanescentes $\exp(\pm \kappa x)$, con $\kappa = \sqrt{2(V_0 - E)}$. La amplitud decae drásticamente, pero si la barrera es suficientemente delgada, la onda no se anula al alcanzar el otro extremo, emergiendo como onda propagante. Las probabilidades de Transmisión ($T$) y Reflexión ($R$) se definen integrando la densidad espacial:
+\begin{equation}
+    T(t) = \int_{x_c + w/2}^{L} |\psi(x,t)|^2 dx, \quad R(t) = \int_{0}^{x_c - w/2} |\psi(x,t)|^2 dx
+\end{equation}
+
+En el caso de una onda procedente de $x\to \infty$, la condición de continuidad de $\psi$ y $\psi'$ en los bordes de la barrera conduce a
+la probabilidad de transmisión exacta:
+\begin{equation}
+    T = \frac{1}{1 + \dfrac{V_0^2 \sinh^2(\kappa w)}{4E(V_0-E)}}
+    \label{eq:T_analitica}
+\end{equation}
+
+\noindent donde $E = k_0^2/2$ es la energía cinética del paquete. Esta expresión decrece exponencialmente con $\kappa w$: si la barrera es ancha o muy alta, la transmisión colapsa drásticamente (aproximación WKB), mientras que para barrera fina puede ser apreciable incluso con $V_0 \gg E$.
+
+Al extender el formalismo a dos dimensiones para el experimento de la doble rendija, el operador cinético involucra el laplaciano $\nabla^2 = \partial^2/\partial x^2 + \partial^2/\partial y^2$. El principio de Huygens-Fresnel dicta que las rendijas actúan como emisores secundarios, generando densidades de probabilidad $|\psi|^2$ con marcados términos cruzados de interferencia.
+
+En el régimen macroscópico (nanografeno), la longitud de onda de de Broglie es extremadamente corta ($\lambda = 2\pi\hbar/mv$). En campo lejano (Fraunhofer), la intensidad monocromática difractada por $N$ rendijas de anchura $a$ y separación $d$ es:
+\begin{equation}
+    I(\theta) = I_0 \left( \frac{\sin(\beta)}{\beta} \right)^2 \left( \frac{\sin(N\delta/2)}{\sin(\delta/2)} \right)^2
+\end{equation}
+
+con $\beta = (\pi a / \lambda)\sin\theta$ y $\delta = (2\pi d / \lambda)\sin\theta$. Dado que el haz molecular emana de un horno térmico, presenta un espectro de velocidades $f(v) \propto \exp\{-(v - v_p)^2 / 2\sigma_v^2\}$, convolucionando múltiples patrones incoherentes en la pantalla de detección.
